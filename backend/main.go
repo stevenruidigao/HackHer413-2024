@@ -4,14 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/generative-ai-go/genai"
+	"github.com/spf13/viper"
+	"google.golang.org/api/option"
 	"html"
 	"log"
 	"net/http"
-
-	"github.com/google/generative-ai-go/genai"
-	"github.com/spf13/viper"
-
-	"google.golang.org/api/option"
 )
 
 type PotentialActionResult struct {
@@ -55,6 +53,11 @@ type AIInput struct {
 	Action string `json:"action"`
 }
 
+type RequestData struct {
+	Action         string `json:"action"`
+	ConversationID string `json:"conversationID"`
+}
+
 func main() {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
@@ -91,7 +94,7 @@ func main() {
 					},
 					"skills": []
 				}
-				
+	
 				Respond only in JSON. Do not include anything else in the response.`),
 			},
 			Role: "user",
@@ -99,7 +102,7 @@ func main() {
 		&genai.Content{
 			Parts: []genai.Part{
 				genai.Text(`You are a storytelling game master. The user will tell you what they do (in JSON), and you will respond with the result (in JSON) and possible next actions.
-
+	
 				Example of user input:
 				{
 				 	"action": "Inspect the situation",
@@ -112,7 +115,7 @@ func main() {
 						{
 							"name": "wand",
 							"description": "A magic wand.",
-						}, 
+						},
 						{
 							"name": "computer",
 							"description": "A Dell laptop.",
@@ -130,7 +133,7 @@ func main() {
 						"level": 10,
 					}]
 				}
-				
+	
 				Example of a response you can give (in JSON):
 				{
 				  "outcome": "Outcome of action",
@@ -143,7 +146,7 @@ func main() {
 					  {
 						  "name": "wand",
 						  "description": "A magic wand.",
-					  }, 
+					  },
 					  {
 						  "name": "computer",
 						  "description": "A Dell laptop.",
@@ -217,7 +220,7 @@ func main() {
 					}
 				  ]
 				}
-				
+	
 				Respond only in JSON. Do not include anything else in the response. Do not allow the user to significantly modify the state of the game without good reason.`),
 			},
 			Role: "model",
@@ -236,7 +239,7 @@ func main() {
 		},
 		"skills": []
 	}
-				
+	
 	Respond only in JSON. Do not include anything else in the response.`))
 
 	if err != nil {
@@ -244,7 +247,7 @@ func main() {
 	}
 
 	text, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
-
+	log.Println(text)
 	if !ok {
 		log.Fatal("wrong")
 	}
@@ -258,11 +261,26 @@ func main() {
 	}
 
 	log.Println(AIResponse)
+	//log.Printf("AI Response from google api: %s", AIResponse)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/submit", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST method is accepted", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// parsing the body
+		var requestData RequestData
+		if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer r.Body.Close()
+		//fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+		fmt.Fprintf(w, "Hello, %q. Received action: %s, conversation ID: %s", html.EscapeString(r.URL.Path), requestData.Action, requestData.ConversationID)
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
