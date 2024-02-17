@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/generative-ai-go/genai"
-	"github.com/spf13/viper"
-	"google.golang.org/api/option"
 	"html"
 	"log"
 	"net/http"
+
+	"github.com/google/generative-ai-go/genai"
+	"github.com/spf13/viper"
+	"google.golang.org/api/option"
 )
 
 type PotentialActionResult struct {
@@ -90,7 +91,7 @@ func main() {
 					"stats": {
 						"INT": 1,
 						"LUK": 1,
-						"STR": 1,
+						"STR": 1
 					},
 					"skills": []
 				}
@@ -110,27 +111,27 @@ func main() {
 					"inventory": [
 						{
 							"name": "potato",
-							"description": "A potato.",
+							"description": "A potato."
 						},
 						{
 							"name": "wand",
-							"description": "A magic wand.",
+							"description": "A magic wand."
 						},
 						{
 							"name": "computer",
-							"description": "A Dell laptop.",
+							"description": "A Dell laptop."
 						}
 					],
 					"game_time": 10,
 					"stats": {
 						"INT": 100,
 						"LUK": 30,
-						"STR": 4,
+						"STR": 4
 					},
 					"skills": [{
 						"name": "Programming",
 						"description": "Can code to defeat computer viruses.",
-						"level": 10,
+						"level": 10
 					}]
 				}
 	
@@ -141,27 +142,27 @@ func main() {
 				  "inventory": [
 					  {
 						  "name": "potato",
-						  "description": "A potato.",
+						  "description": "A potato."
 					  },
 					  {
 						  "name": "wand",
-						  "description": "A magic wand.",
+						  "description": "A magic wand."
 					  },
 					  {
 						  "name": "computer",
-						  "description": "A Dell laptop.",
+						  "description": "A Dell laptop."
 					  }
 				  ],
 				  "game_time": 11,
 				  "stats": {
 					  "INT": 100,
 					  "LUK": 30,
-					  "STR": 4,
+					  "STR": 4
 				  },
 				  "skills": [{
 					  "name": "Programming",
 					  "description": "Can code to defeat computer viruses.",
-					  "level": 10,
+					  "level": 10
 				  }],
 				  "next_actions": [
 					{
@@ -235,7 +236,7 @@ func main() {
 		"stats": {
 			"INT": 1,
 			"LUK": 1,
-			"STR": 1,
+			"STR": 1
 		},
 		"skills": []
 	}
@@ -247,7 +248,9 @@ func main() {
 	}
 
 	text, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
+
 	log.Println(text)
+
 	if !ok {
 		log.Fatal("wrong")
 	}
@@ -261,7 +264,7 @@ func main() {
 	}
 
 	log.Println(AIResponse)
-	//log.Printf("AI Response from google api: %s", AIResponse)
+	log.Printf("AI Response from google api: %s", AIResponse)
 
 	mux := http.NewServeMux()
 
