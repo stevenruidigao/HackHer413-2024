@@ -1,6 +1,6 @@
 import './App.css';
 
-function App() {
+function Button() {
   return (
     <div className="App">
       <div>
@@ -10,4 +10,4 @@ function App() {
   );
 }
 
-export default App;
+export default Button;
