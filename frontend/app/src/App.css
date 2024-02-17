@@ -37,17 +37,3 @@
   }
 }
 
-.item {
-  width: 50px;
-  height: 50px;
-  background-color: red;
-  margin: 5px;
-}
-
-.inventory {
-  width: 300px;
-  height: 300px;
-  padding: 10px;
-  display: flex;
-  background-color: blue;
-}
