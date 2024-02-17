@@ -36,14 +36,23 @@ type Skill struct {
 	Level       int    `json:"level"`
 }
 
+type GameState struct {
+	Scenario  string         `json:"-"`
+	Inventory []Item         `json:"inventory"`
+	GameTime  int            `json:"game_time"`
+	Stats     map[string]int `json:"stats"`
+	Skills    []Skill        `json:"skills"`
+}
+
 type AIResponse struct {
+	GameState
 	Outcome     string            `json:"outcome"`
-	Scenario    string            `json:"-"`
-	Inventory   []Item            `json:"inventory"`
-	GameTime    int               `json:"game_time"`
-	Stats       map[string]int    `json:"stats"`
-	Skills      []Skill           `json:"skills"`
 	NextActions []PotentialAction `json:"next_actions"`
+}
+
+type AIInput struct {
+	GameState
+	Action string `json:"action"`
 }
 
 func main() {
@@ -252,7 +261,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/submit", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 	})
 
