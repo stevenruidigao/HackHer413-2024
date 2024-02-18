@@ -37,7 +37,7 @@ type Skill struct {
 }
 
 type Character struct {
-	Name      string         `json:"name"`
+	Name      string         `json:"name,omitempty"`
 	Inventory []Item         `json:"inventory"`
 	Stats     map[string]int `json:"stats"`
 	Skills    []Skill        `json:"skills"`
@@ -52,11 +52,15 @@ type NPC struct {
 	Description string `json:"description"`
 }
 
-type GameState struct {
-	Scenario string `json:"-"`
+type GameStatePublic struct {
 	GameTime int    `json:"game_time"`
 	Player   Player `json:"player"`
-	NPCs     []NPC  `json:npcs"`
+	NPCs     []NPC  `json:"npcs"`
+}
+
+type GameState struct {
+	GameStatePublic
+	Scenario string `json:"scenario"`
 }
 
 type OutputCharacter struct {
@@ -67,10 +71,11 @@ type OutputCharacter struct {
 }
 
 type OutcomeOutput struct {
-	Player      OutputCharacter   `json:"player"`
 	Outcome     string            `json:"outcome"`
+	Scenario    string            `json:"scenario"`
+	Player      OutputCharacter   `json:"player"`
+	NPCs        []OutputCharacter `json:"npcs"`
 	NextActions []PotentialAction `json:"next_actions"`
-	NPCs        []OutputCharacter `json:npcs"`
 }
 
 type ActionInput struct {
@@ -82,6 +87,12 @@ type Chat struct {
 	ConversationID string           `json:"conversation_id"`
 	GameState      GameState        `json:"game_state"`
 	History        []*genai.Content `json:"-"`
+}
+
+type ChatResponse struct {
+	ConversationID string          `json:"conversation_id"`
+	GameState      GameStatePublic `json:"game_state"`
+	Outcome        string          `json:"outcome"`
 }
 
 type RequestData struct {
@@ -112,6 +123,7 @@ func main() {
 
 	// For text-only input, use the gemini-pro model
 	model := client.GenerativeModel("gemini-pro")
+	model.Temperature = genai.Ptr[float32](0.5)
 
 	/* Comment used to be here */
 
@@ -134,24 +146,28 @@ func main() {
 			return
 		}
 
+		log.Println("Conversation ID:", requestData.ConversationID, "Length:", len(requestData.ConversationID))
+
 		if len(requestData.ConversationID) == 0 {
 			gameState := GameState{
 				Scenario: requestData.Scenario,
-				GameTime: 0,
-				Player: Player{
-					Character: Character{
-						Name:      requestData.Name,
-						Inventory: []Item{},
-						Stats: map[string]int{
-							"HP":  10,
-							"INT": 1,
-							"LUK": 1,
-							"STR": 1,
+				GameStatePublic: GameStatePublic{
+					GameTime: 0,
+					Player: Player{
+						Character: Character{
+							Name:      requestData.Name,
+							Inventory: []Item{},
+							Stats: map[string]int{
+								"HP":  10,
+								"INT": 1,
+								"LUK": 1,
+								"STR": 1,
+							},
+							Skills: []Skill{},
 						},
-						Skills: []Skill{},
 					},
+					NPCs: []NPC{},
 				},
-				NPCs: []NPC{},
 			}
 
 			action := ActionInput{
@@ -161,7 +177,7 @@ func main() {
 
 			jsonAction, err := json.Marshal(action)
 
-			log.Println(string(jsonAction))
+			log.Println(genai.Text(strings.Join([]string{string(jsonAction), PROMPT_POSTFIX}, "\n\n")))
 
 			if err != nil {
 				log.Fatal("Error marshalling action to JSON:", err)
@@ -175,6 +191,7 @@ func main() {
 						Parts: []genai.Part{
 							genai.Text(strings.Join([]string{string(jsonAction), PROMPT_POSTFIX}, "\n\n")),
 						},
+						Role: "user",
 					},
 					&genai.Content{
 						Parts: []genai.Part{
@@ -186,14 +203,17 @@ func main() {
 			}
 
 			IDToChat[chat.ConversationID] = chat
+			requestData.ConversationID = chat.ConversationID
 		}
 
 		// construct the input for AI api
 		chat := IDToChat[requestData.ConversationID]
 
+		log.Println(chat.GameState.GameStatePublic.Player.Character.Stats)
+
 		action := ActionInput{
-			GameState: chat.GameState,
 			Action:    requestData.Action,
+			GameState: chat.GameState,
 		}
 
 		inputJSON, err := json.Marshal(action)
@@ -201,6 +221,8 @@ func main() {
 		if err != nil {
 			log.Fatal("Error marshalling input to JSON:", err)
 		}
+
+		log.Println("Input JSON:", string(inputJSON))
 
 		cs := model.StartChat()
 		cs.History = chat.History
@@ -231,19 +253,21 @@ func main() {
 			log.Fatal(err)
 		}
 
-		chat.GameState.Player.Stats["HP"] -= AIResp.Player.DamageTaken
+		chat.GameState.Scenario = AIResp.Scenario
+
+		chat.GameState.GameStatePublic.Player.Character.Stats["HP"] -= AIResp.Player.DamageTaken
 
 		for i := 0; i < len(AIResp.Player.ItemsGained); i++ {
-			chat.GameState.Player.Character.Inventory = append(chat.GameState.Player.Character.Inventory, AIResp.Player.ItemsGained[i])
+			chat.GameState.GameStatePublic.Player.Character.Inventory = append(chat.GameState.GameStatePublic.Player.Character.Inventory, AIResp.Player.ItemsGained[i])
 		}
 
 		for i := 0; i < len(AIResp.Player.ItemsLost); i++ {
-			for j := 0; j < len(chat.GameState.Player.Character.Inventory); j++ {
-				if chat.GameState.Player.Character.Inventory[j].Name == AIResp.Player.ItemsLost[i].Name {
+			for j := 0; j < len(chat.GameState.GameStatePublic.Player.Character.Inventory); j++ {
+				if chat.GameState.GameStatePublic.Player.Character.Inventory[j].Name == AIResp.Player.ItemsLost[i].Name {
 					newInventory := make([]Item, 0)
-					newInventory = append(newInventory, chat.GameState.Player.Character.Inventory[:j]...)
-					newInventory = append(newInventory, chat.GameState.Player.Character.Inventory[j+1:]...)
-					chat.GameState.Player.Inventory = newInventory
+					newInventory = append(newInventory, chat.GameState.GameStatePublic.Player.Character.Inventory[:j]...)
+					newInventory = append(newInventory, chat.GameState.GameStatePublic.Player.Character.Inventory[j+1:]...)
+					chat.GameState.GameStatePublic.Player.Inventory = newInventory
 
 					break
 				}
@@ -251,21 +275,21 @@ func main() {
 		}
 
 		for i := 0; i < len(AIResp.NPCs); i++ {
-			for j := 0; j < len(chat.GameState.NPCs); j++ {
-				if chat.GameState.NPCs[j].Name == AIResp.NPCs[i].Name {
-					chat.GameState.NPCs[j].Stats["HP"] -= AIResp.NPCs[i].DamageTaken
+			for j := 0; j < len(chat.GameState.GameStatePublic.NPCs); j++ {
+				if chat.GameState.GameStatePublic.NPCs[j].Name == AIResp.NPCs[i].Name {
+					chat.GameState.GameStatePublic.NPCs[j].Stats["HP"] -= AIResp.NPCs[i].DamageTaken
 
 					for i := 0; i < len(AIResp.NPCs[i].ItemsGained); i++ {
-						chat.GameState.NPCs[j].Character.Inventory = append(chat.GameState.NPCs[j].Character.Inventory, AIResp.NPCs[i].ItemsGained[i])
+						chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = append(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory, AIResp.NPCs[i].ItemsGained[i])
 					}
 
 					for i := 0; i < len(AIResp.NPCs[i].ItemsLost); i++ {
-						for j := 0; j < len(chat.GameState.NPCs[j].Character.Inventory); j++ {
-							if chat.GameState.NPCs[j].Character.Inventory[j].Name == AIResp.NPCs[i].ItemsLost[i].Name {
+						for j := 0; j < len(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory); j++ {
+							if chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[j].Name == AIResp.NPCs[i].ItemsLost[i].Name {
 								newInventory := make([]Item, 0)
-								newInventory = append(newInventory, chat.GameState.NPCs[j].Character.Inventory[:j]...)
-								newInventory = append(newInventory, chat.GameState.NPCs[j].Character.Inventory[j+1:]...)
-								chat.GameState.NPCs[j].Character.Inventory = newInventory
+								newInventory = append(newInventory, chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[:j]...)
+								newInventory = append(newInventory, chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[j+1:]...)
+								chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = newInventory
 
 								break
 							}
@@ -276,10 +300,15 @@ func main() {
 		}
 
 		chat.History = cs.History
-
 		IDToChat[requestData.ConversationID] = chat
 
-		json.NewEncoder(w).Encode(chat)
+		chatResponse := ChatResponse{
+			ConversationID: chat.ConversationID,
+			GameState:      chat.GameState.GameStatePublic,
+			Outcome:        AIResp.Outcome,
+		}
+
+		json.NewEncoder(w).Encode(chatResponse)
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
