@@ -26,6 +26,7 @@ type PotentialAction struct {
 
 type Item struct {
 	Name        string `json:"name"`
+	Quantity    int    `json:"quantity"`
 	Description string `json:"description"`
 }
 
@@ -35,12 +36,27 @@ type Skill struct {
 	Level       int    `json:"level"`
 }
 
+type Character struct {
+	Name   string         `json:"name"`
+	Stats  map[string]int `json:"stats"`
+	Skills []Skill        `json:"skills"`
+}
+
+type Player struct {
+	Character
+	Inventory []Item `json:"inventory"`
+}
+
+type NPC struct {
+	Character
+	Description string `json:"description"`
+}
+
 type GameState struct {
-	Scenario  string         `json:"-"`
-	Inventory []Item         `json:"inventory"`
-	GameTime  int            `json:"game_time"`
-	Stats     map[string]int `json:"stats"`
-	Skills    []Skill        `json:"skills"`
+	Scenario string `json:"-"`
+	GameTime int    `json:"game_time"`
+	Player   Player `json:"player"`
+	NPCs     []NPC  `json:npcs"`
 }
 
 type AIResponse struct {
@@ -86,17 +102,26 @@ func main() {
 				genai.Text(`{
 					"action": "Begin the game.",
 					"scenario": "A dragon has abducted the prince.",
-					"inventory": [],
 					"game_time": 0,
-					"stats": {
-						"INT": 1,
-						"LUK": 1,
-						"STR": 1
+					"player": {
+						"name": "",
+						"inventory": [],
+						"stats": {
+							"CHR": 1,
+							"CON": 1,
+							"DEX": 1,
+							"INT": 1,
+							"STR": 1,
+							"WIS": 1,
+							"LUK": 1,
+							"HP": 10
+						},
+						"skills": []
 					},
-					"skills": []
+					"npcs": []
 				}
 	
-				Respond only in JSON. Do not include anything else in the response.`),
+				Respond only in JSON. Do not include anything else in the response. Do not allow the player to significantly modify the state of the game without good reason. Unrealistic outcomes should be extremely unlikely. Do not modify stats without good reason. Store anything that needs to be hidden from the player in the scenario, along with whatever was already in the scenario. Any information that is unchanged should still be repeated.`),
 			},
 			Role: "user",
 		},
@@ -108,140 +133,258 @@ func main() {
 				{
 				 	"action": "Inspect the situation",
 					"scenario": "Fighting a dragon",
-					"inventory": [
-						{
-							"name": "potato",
-							"description": "A potato."
-						},
-						{
-							"name": "wand",
-							"description": "A magic wand."
-						},
-						{
-							"name": "computer",
-							"description": "A Dell laptop."
-						}
-					],
 					"game_time": 10,
-					"stats": {
-						"INT": 100,
-						"LUK": 30,
-						"STR": 4
+					"player": {
+						"inventory": [
+							{
+								"name": "potato",
+								"description": "A potato.",
+								"quantity": 1
+							},
+							{
+								"name": "wand",
+								"description": "A magic wand.",
+								"quantity": 1
+							},
+							{
+								"name": "computer",
+								"description": "A Dell laptop.",
+								"quantity": 1
+							}
+						],
+						"stats": {
+							"CHR": 0,
+							"CON": 1,
+							"DEX": 30,
+							"INT": 100,
+							"STR": 4,
+							"WIS": 18,
+							"LUK": 30,
+							"HP": 20
+						},
+						"skills": [
+							{
+								"name": "Programming",
+								"description": "Can code to defeat computer viruses.",
+								"level": 10
+							}
+						]
 					},
-					"skills": [{
-						"name": "Programming",
-						"description": "Can code to defeat computer viruses.",
-						"level": 10
-					}]
+					"npcs": [
+						{
+							"name": "Dragon",
+							"description": "A dragon."
+							"stats": {
+                                "CHR": 1,
+                                "CON": 10,
+                                "DEX": 5,
+                                "INT": 2,
+                                "STR": 15,
+                                "WIS": 3,
+                                "LUK": 1,
+                                "HP": 50
+                        	},
+							"skills": [
+								{
+									"name": "Fire Breath",
+									"description": "Can breathe fire to burn things.",
+									"level": 20
+								}
+							]
+						},
+						{
+							"name": "Prince",
+							"description": "The prince that was captured.",
+							"stats": {
+									"CHR": 5,
+									"CON": 3,
+									"DEX": 2,
+									"INT": 4,
+									"STR": 1,
+									"WIS": 3,
+									"LUK": 1,
+									"HP": 10
+							},
+							"skills": [
+								{
+									"name": "Leadership",
+									"description": "Can lead followers.",
+									"level": 20
+								}
+							]
+						}
+					]
 				}
 	
 				Example of a response you can give (in JSON):
 				{
-				  "outcome": "Outcome of action",
-				  "scenario": "Updated scenario",
-				  "inventory": [
-					  {
-						  "name": "potato",
-						  "description": "A potato."
-					  },
-					  {
-						  "name": "wand",
-						  "description": "A magic wand."
-					  },
-					  {
-						  "name": "computer",
-						  "description": "A Dell laptop."
-					  }
-				  ],
-				  "game_time": 11,
-				  "stats": {
-					  "INT": 100,
-					  "LUK": 30,
-					  "STR": 4
-				  },
-				  "skills": [{
-					  "name": "Programming",
-					  "description": "Can code to defeat computer viruses.",
-					  "level": 10
-				  }],
-				  "next_actions": [
-					{
-					  "description": "Go for the jugular (high risk, high reward)",
-					  "time_cost": 1,
-					  "potential_results": [
-						{
-						  "text": "You land a critical blow, dealing devastating damage! But beware the dragon's fiery breath!",
-						  "probability": 0.25
+					"outcome": "Outcome of action",
+					"scenario": "Updated scenario",
+					"game_time": 11,
+					"player": {
+						"inventory": [
+							{
+								"name": "potato",
+								"description": "A potato.",
+								"quantity": 1
+							},
+							{
+								"name": "wand",
+								"description": "A magic wand.",
+								"quantity": 1
+							},
+							{
+								"name": "computer",
+								"description": "A Dell laptop.",
+								"quantity": 1
+							}
+						],
+						"stats": {
+							"CHR": 0,
+							"CON": 1,
+							"DEX": 30,
+							"INT": 100,
+							"STR": 4,
+							"WIS": 18,
+							"LUK": 30,
+							"HP": 20
 						},
-						{
-						  "text": "The dragon deflects your attack and retaliates with a powerful swipe!",
-						  "probability": 0.5
-						},
-						{
-						  "text": "Your aim falters, missing the vulnerable spot entirely.",
-						  "probability": 0.25
-						}
-					  ]
+						"skills": [{
+							"name": "Programming",
+							"description": "Can code to defeat computer viruses.",
+							"level": 10
+						}]
 					},
-					{
-					  "description": "Weaken its defenses (moderate risk, moderate reward)",
-					  "time_cost": 2,
-					  "potential_results": [
+					"npcs": [
 						{
-						  "text": "You manage to cripple a wing, hindering the dragon's flight and maneuverability!",
-						  "probability": 0.35
+							"name": "Dragon",
+							"description": "A dragon.",
+							"stats": {
+                                "CHR": 1,
+                                "CON": 10,
+                                "DEX": 5,
+                                "INT": 2,
+                                "STR": 15,
+                                "WIS": 3,
+                                "LUK": 1,
+                                "HP": 50
+                        	},
+							"skills": [
+								{
+									"name": "Fire Breath",
+									"description": "Can breathe fire to burn things.",
+									"level": 20
+								}
+							]
 						},
 						{
-						  "text": "Your attacks chip away at its scales, slowly wearing it down and exposing weak points.",
-						  "probability": 0.5
-						},
-						{
-						  "text": "The dragon shrugs off your blows, its thick hide proving resilient. Be wary of its tail swing!",
-						  "probability": 0.15
+							"name": "Prince",
+							"description": "The prince that was captured.",
+							"stats": {
+									"CHR": 5,
+									"CON": 3,
+									"DEX": 2,
+									"INT": 4,
+									"STR": 1,
+									"WIS": 3,
+									"LUK": 1,
+									"HP": 10
+							},
+							"skills": [
+								{
+									"name": "Leadership",
+									"description": "Can lead followers.",
+									"level": 20
+								}
+							]
 						}
-					  ]
-					},
-					{
-					  "description": "Distract and escape (low risk, low reward)",
-					  "time_cost": 1,
-					  "potential_results": [
+					],
+					"next_actions": [
 						{
-						  "text": "You successfully divert the dragon's attention with a well-placed object, creating an opening to flee!",
-						  "probability": 0.4
+							"description": "Go for the jugular (high risk, high reward)",
+							"time_cost": 1,
+							"potential_results": [
+								{
+									"text": "You land a critical blow, dealing devastating damage! But beware the dragon's fiery breath!",
+									"probability": 0.25
+								},
+								{
+									"text": "The dragon deflects your attack and retaliates with a powerful swipe!",
+									"probability": 0.5
+								},
+								{
+									"text": "Your aim falters, missing the vulnerable spot entirely.",
+									"probability": 0.25
+								}
+							]
 						},
 						{
-						  "text": "The distraction fails, angering the dragon further! It unleashes a fiery breath in your direction!",
-						  "probability": 0.4
+							"description": "Weaken its defenses (moderate risk, moderate reward)",
+							"time_cost": 2,
+							"potential_results": [
+								{
+									"text": "You manage to cripple a wing, hindering the dragon's flight and maneuverability!",
+									"probability": 0.35
+								},
+								{
+									"text": "Your attacks chip away at its scales, slowly wearing it down and exposing weak points.",
+									"probability": 0.5
+								},
+								{
+									"text": "The dragon shrugs off your blows, its thick hide proving resilient. Be wary of its tail swing!",
+									"probability": 0.15
+								}
+							]
 						},
 						{
-						  "text": "You stumble during your escape attempt, leaving yourself vulnerable to the dragon's sharp claws.",
-						  "probability": 0.2
+							"description": "Distract and escape (low risk, low reward)",
+							"time_cost": 1,
+							"potential_results": [
+								{
+									"text": "You successfully divert the dragon's attention with a well-placed object, creating an opening to flee!",
+									"probability": 0.4
+								},
+								{
+									"text": "The distraction fails, angering the dragon further! It unleashes a fiery breath in your direction!",
+									"probability": 0.4
+								},
+								{
+									"text": "You stumble during your escape attempt, leaving yourself vulnerable to the dragon's sharp claws.",
+									"probability": 0.2
+								}
+							]
 						}
-					  ]
-					}
-				  ]
+					]
 				}
 	
-				Respond only in JSON. Do not include anything else in the response. Do not allow the user to significantly modify the state of the game without good reason.`),
+				Respond only in JSON. Do not include anything else in the response. Do not allow the player to significantly modify the state of the game without good reason. Unrealistic outcomes should be extremely unlikely. Do not modify stats without good reason. Store anything that needs to be hidden from the player in the scenario, along with whatever was already in the scenario. Any information that is unchanged should still be repeated.`),
 			},
 			Role: "model",
 		},
 	}
 
 	resp, err := cs.SendMessage(ctx, genai.Text(`{
-		"action": "Assess the situation.",
-		"scenario": "A dragon has abducted the prince.",
-		"inventory": [],
+		"action": "Kill the dragon.",
+		"scenario": "A dragon has abducted the prince. He is now in front of you.",
 		"game_time": 0,
-		"stats": {
-			"INT": 1,
-			"LUK": 1,
-			"STR": 1
+		"player": {
+			"inventory": [],
+			"stats": {
+				"CHR": 1,
+				"CON": 1,
+				"DEX": 1,
+				"INT": 1,
+				"STR": 1,
+				"WIS": 1,
+				"LUK": 1,
+				"HP": 10
+			},
+			"skills": []
 		},
-		"skills": []
+		"npcs": []
 	}
 	
-	Respond only in JSON. Do not include anything else in the response.`))
+	Respond only in JSON. Do not include anything else in the response. Do not allow the player to significantly modify the state of the game without good reason. Unrealistic outcomes should be extremely unlikely. Do not modify stats without good reason. Store anything that needs to be hidden from the player in the scenario, along with whatever was already in the scenario. Any information that is unchanged should still be repeated.`))
 
 	if err != nil {
 		log.Fatal(err)
