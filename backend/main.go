@@ -400,16 +400,23 @@ func main() {
 				if chat.GameState.GameStatePublic.NPCs[j].Name == AIResp.NPCs[i].Name {
 					chat.GameState.GameStatePublic.NPCs[j].Stats["HP"] -= AIResp.NPCs[i].DamageTaken
 
-					for i := 0; i < len(AIResp.NPCs[i].ItemsGained); i++ {
-						chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = append(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory, AIResp.NPCs[i].ItemsGained[i])
+					if chat.GameState.GameStatePublic.NPCs[j].Stats["HP"] <= 0 {
+						newNPCs := make([]NPC, 0)
+						newNPCs = append(newNPCs, chat.GameState.GameStatePublic.NPCs[:j]...)
+						newNPCs = append(newNPCs, chat.GameState.GameStatePublic.NPCs[j+1:]...)
+						chat.GameState.GameStatePublic.NPCs = newNPCs
 					}
 
-					for i := 0; i < len(AIResp.NPCs[i].ItemsLost); i++ {
-						for j := 0; j < len(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory); j++ {
-							if chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[j].Name == AIResp.NPCs[i].ItemsLost[i].Name {
+					for k := 0; k < len(AIResp.NPCs[i].ItemsGained); k++ {
+						chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = append(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory, AIResp.NPCs[k].ItemsGained[k])
+					}
+
+					for k := 0; k < len(AIResp.NPCs[i].ItemsLost); k++ {
+						for l := 0; l < len(chat.GameState.GameStatePublic.NPCs[l].Character.Inventory); l++ {
+							if chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[l].Name == AIResp.NPCs[i].ItemsLost[k].Name {
 								newInventory := make([]Item, 0)
-								newInventory = append(newInventory, chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[:j]...)
-								newInventory = append(newInventory, chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[j+1:]...)
+								newInventory = append(newInventory, chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[:l]...)
+								newInventory = append(newInventory, chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[l+1:]...)
 								chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = newInventory
 
 								break
