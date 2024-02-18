@@ -68,6 +68,7 @@ type AIResponse struct {
 type AIInput struct {
 	GameState
 	Action string `json:"action"`
+	Effectiveness string `json:"effectiveness"`//XX%
 }
 
 type RequestData struct {
@@ -94,6 +95,8 @@ func main() {
 
 	// For text-only input, use the gemini-pro model
 	model := client.GenerativeModel("gemini-pro")
+	model.Temperature = genai.Ptr[float32](0.5)
+	
 	// Initialize the chat
 	cs := model.StartChat()
 	cs.History = []*genai.Content{
@@ -127,20 +130,15 @@ func main() {
 		},
 		&genai.Content{
 			Parts: []genai.Part{
-				genai.Text(`You are a storytelling game master. The user will tell you what they do (in JSON), and you will respond with the result (in JSON) and possible next actions.
+				genai.Text(`You are a storytelling game master. The user will tell you what they do (in JSON), and you will respond with the result (in JSON). Include TODO
 	
 				Example of user input:
 				{
-				 	"action": "Inspect the situation",
+				 	"action": "The throw my wand at the dragon",
 					"scenario": "Fighting a dragon",
 					"game_time": 10,
 					"player": {
 						"inventory": [
-							{
-								"name": "potato",
-								"description": "A potato.",
-								"quantity": 1
-							},
 							{
 								"name": "wand",
 								"description": "A magic wand.",
@@ -173,91 +171,6 @@ func main() {
 					"npcs": [
 						{
 							"name": "Dragon",
-							"description": "A dragon."
-							"stats": {
-                                "CHR": 1,
-                                "CON": 10,
-                                "DEX": 5,
-                                "INT": 2,
-                                "STR": 15,
-                                "WIS": 3,
-                                "LUK": 1,
-                                "HP": 50
-                        	},
-							"skills": [
-								{
-									"name": "Fire Breath",
-									"description": "Can breathe fire to burn things.",
-									"level": 20
-								}
-							]
-						},
-						{
-							"name": "Prince",
-							"description": "The prince that was captured.",
-							"stats": {
-									"CHR": 5,
-									"CON": 3,
-									"DEX": 2,
-									"INT": 4,
-									"STR": 1,
-									"WIS": 3,
-									"LUK": 1,
-									"HP": 10
-							},
-							"skills": [
-								{
-									"name": "Leadership",
-									"description": "Can lead followers.",
-									"level": 20
-								}
-							]
-						}
-					]
-				}
-	
-				Example of a response you can give (in JSON):
-				{
-					"outcome": "Outcome of action",
-					"scenario": "Updated scenario",
-					"game_time": 11,
-					"player": {
-						"inventory": [
-							{
-								"name": "potato",
-								"description": "A potato.",
-								"quantity": 1
-							},
-							{
-								"name": "wand",
-								"description": "A magic wand.",
-								"quantity": 1
-							},
-							{
-								"name": "computer",
-								"description": "A Dell laptop.",
-								"quantity": 1
-							}
-						],
-						"stats": {
-							"CHR": 0,
-							"CON": 1,
-							"DEX": 30,
-							"INT": 100,
-							"STR": 4,
-							"WIS": 18,
-							"LUK": 30,
-							"HP": 20
-						},
-						"skills": [{
-							"name": "Programming",
-							"description": "Can code to defeat computer viruses.",
-							"level": 10
-						}]
-					},
-					"npcs": [
-						{
-							"name": "Dragon",
 							"description": "A dragon.",
 							"stats": {
                                 "CHR": 1,
@@ -281,14 +194,14 @@ func main() {
 							"name": "Prince",
 							"description": "The prince that was captured.",
 							"stats": {
-									"CHR": 5,
-									"CON": 3,
-									"DEX": 2,
-									"INT": 4,
-									"STR": 1,
-									"WIS": 3,
-									"LUK": 1,
-									"HP": 10
+								"CHR": 5,
+								"CON": 3,
+								"DEX": 2,
+								"INT": 4,
+								"STR": 1,
+								"WIS": 3,
+								"LUK": 1,
+								"HP": 10
 							},
 							"skills": [
 								{
@@ -298,61 +211,41 @@ func main() {
 								}
 							]
 						}
-					],
-					"next_actions": [
+					]
+				}
+
+				When responding, dictate the outcome of the player's actions (in JSON), while considering if the player has the necessary items in their inventory.
+				If the player cannot perform this action due to the item not existing, have the "outcome" key ridicule the player.
+				Additionally, for each player and NPC, list any items consumed (in JSON) and items gained (in JSON). Also list damage taken.
+				For every player and npc, have a key for "items_lost", "items_gained", and "damage_taken".
+				Do NOT mirror the input JSON, make sure to include items lost, items gained, and damage taken.
+				Please use the exact keys in the following example.  
+
+				Example of a response you can give (in JSON):
+				{
+					"outcome": "The wand snaps in two and explodes in a flurry of magic.",
+					"scenario": "Fighting a dragon",
+					"player": {
+						"items_lost": [{
+							"name": "wand",
+							"description": "A magic wand.",
+							"quantity": 1
+						}],
+						"items_gained": [],
+						"damage_taken": 1
+					},
+					"npcs": [
 						{
-							"description": "Go for the jugular (high risk, high reward)",
-							"time_cost": 1,
-							"potential_results": [
-								{
-									"text": "You land a critical blow, dealing devastating damage! But beware the dragon's fiery breath!",
-									"probability": 0.25
-								},
-								{
-									"text": "The dragon deflects your attack and retaliates with a powerful swipe!",
-									"probability": 0.5
-								},
-								{
-									"text": "Your aim falters, missing the vulnerable spot entirely.",
-									"probability": 0.25
-								}
-							]
+							"name": "Dragon",
+							"items_lost": [],
+							"items_gained": [],
+							"damage_taken": 10
 						},
 						{
-							"description": "Weaken its defenses (moderate risk, moderate reward)",
-							"time_cost": 2,
-							"potential_results": [
-								{
-									"text": "You manage to cripple a wing, hindering the dragon's flight and maneuverability!",
-									"probability": 0.35
-								},
-								{
-									"text": "Your attacks chip away at its scales, slowly wearing it down and exposing weak points.",
-									"probability": 0.5
-								},
-								{
-									"text": "The dragon shrugs off your blows, its thick hide proving resilient. Be wary of its tail swing!",
-									"probability": 0.15
-								}
-							]
-						},
-						{
-							"description": "Distract and escape (low risk, low reward)",
-							"time_cost": 1,
-							"potential_results": [
-								{
-									"text": "You successfully divert the dragon's attention with a well-placed object, creating an opening to flee!",
-									"probability": 0.4
-								},
-								{
-									"text": "The distraction fails, angering the dragon further! It unleashes a fiery breath in your direction!",
-									"probability": 0.4
-								},
-								{
-									"text": "You stumble during your escape attempt, leaving yourself vulnerable to the dragon's sharp claws.",
-									"probability": 0.2
-								}
-							]
+							"name": "Prince",
+							"items_lost": [],
+							"items_gained": [],
+							"damage_taken": 0
 						}
 					]
 				}
@@ -364,11 +257,14 @@ func main() {
 	}
 
 	resp, err := cs.SendMessage(ctx, genai.Text(`{
-		"action": "Kill the dragon.",
-		"scenario": "A dragon has abducted the prince. He is now in front of you.",
+		"action": "I activate my lightsaber from my inventory.  I then engage in battle with Ugly Sith Lord",
+		"scenario": "The stormtroopers are raiding the player's base",
 		"game_time": 0,
 		"player": {
-			"inventory": [],
+			"inventory": [{
+				"name": "Lightsaber",
+				"descrpition": "A real life lightsaber with a lazer blade"
+			}],
 			"stats": {
 				"CHR": 1,
 				"CON": 1,
@@ -381,7 +277,71 @@ func main() {
 			},
 			"skills": []
 		},
-		"npcs": []
+		"npcs": [
+			{
+				"name": "Stormtrooper",
+				"description": "The average Empire Lackey",
+				"stats": {
+					"CHR": 1,
+					"CON": 10,
+					"DEX": 5,
+					"INT": 0,
+					"STR": 15,
+					"WIS": 3,
+					"LUK": 1,
+					"HP": 5
+				},
+				"skills": [
+					{
+						"name": "Shoot",
+						"description": "Shoots his gun",
+						"level": 20
+					}
+				]
+			},
+			{
+				"name": "Sith Lord",
+				"description": "The ultimate sith lord",
+				"stats": {
+					"CHR": 5,
+					"CON": 3,
+					"DEX": 2,
+					"INT": 4,
+					"STR": 1,
+					"WIS": 3,
+					"LUK": 1,
+					"HP": 50
+				},
+				"skills": [
+					{
+						"name": "Leadership",
+						"description": "Can lead followers.",
+						"level": 20
+					}
+				]
+			},
+			{
+				"name": "Ugly Wrinkly Emperor",
+				"description": "The ultimate sith lord",
+				"stats": {
+					"CHR": 5,
+					"CON": 3,
+					"DEX": 2,
+					"INT": 4,
+					"STR": 1,
+					"WIS": 3,
+					"LUK": 1,
+					"HP": 1
+				},
+				"skills": [
+					{
+						"name": "Leadership",
+						"description": "Can lead followers.",
+						"level": 20
+					}
+				]
+			}
+		]
 	}
 	
 	Respond only in JSON. Do not include anything else in the response. Do not allow the player to significantly modify the state of the game without good reason. Unrealistic outcomes should be extremely unlikely. Do not modify stats without good reason. Store anything that needs to be hidden from the player in the scenario, along with whatever was already in the scenario. Any information that is unchanged should still be repeated.`))
