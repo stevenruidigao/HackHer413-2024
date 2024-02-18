@@ -60,6 +60,16 @@ type RequestData struct {
 }
 
 func main() {
+	idToGameState := make(map[string]GameState)
+	idToGameState["1"] = GameState{
+		Scenario: "A dragon has abducted the prince.",
+		Stats: map[string]int{
+			"INT": 1,
+			"LUK": 1,
+			"STR": 1,
+		},
+	}
+
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
 
@@ -281,6 +291,37 @@ func main() {
 			return
 		}
 
+		// construct the input for ai api
+		gameState := idToGameState[requestData.ConversationID]
+		APIInput := AIInput{
+			GameState: gameState,
+			Action:    requestData.Action,
+		}
+		inputJSON, err := json.Marshal(APIInput)
+		if err != nil {
+			log.Fatal("Error marshalling input to JSON:", err)
+		}
+		resp, err := cs.SendMessage(ctx, genai.Text(inputJSON))
+		if err != nil {
+			log.Fatal("Error sending message:", err)
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		text, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
+		if !ok {
+			log.Fatal("wrong")
+		}
+		log.Println(text)
+
+		AIResponse1 := AIResponse{}
+		//err = json.Unmarshal([]byte(text), &AIResponse)
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
+		// idToGameState[requestData.ConversationID] = AIResponse.GameState
 		defer r.Body.Close()
 		//fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 		fmt.Fprintf(w, "Hello, %q. Received action: %s, conversation ID: %s", html.EscapeString(r.URL.Path), requestData.Action, requestData.ConversationID)
