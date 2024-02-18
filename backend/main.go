@@ -98,7 +98,7 @@ type ChatResponse struct {
 }
 
 type RequestData struct {
-	ConversationID string `json:"conversationID"`
+	ConversationID string `json:"conversation_id"`
 	Action         string `json:"action"`
 	Name           string `json:"name"`
 	Scenario       string `json:"scenario"`
@@ -148,7 +148,7 @@ func main() {
 			return
 		}
 
-		log.Println("Conversation ID:", requestData.ConversationID, "Length:", len(requestData.ConversationID))
+		log.Println("Conversation ID:", requestData.ConversationID, "Length:", len(requestData.ConversationID), requestData)
 
 		if len(requestData.ConversationID) == 0 {
 			requestData.ConversationID = uuid.NewString()
