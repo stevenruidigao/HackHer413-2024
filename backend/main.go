@@ -182,7 +182,7 @@ func main() {
 
 			jsonAction, err := json.Marshal(action)
 
-			log.Println(genai.Text(strings.Join([]string{string(jsonAction), PROMPT_POSTFIX}, "\n\n")))
+			log.Println(genai.Text(string(jsonAction) + "\n\n" + PROMPT_POSTFIX))
 
 			if err != nil {
 				log.Fatal("Error marshalling action to JSON:", err)
@@ -194,13 +194,13 @@ func main() {
 				History: []*genai.Content{
 					&genai.Content{
 						Parts: []genai.Part{
-							genai.Text(strings.Join([]string{string(jsonAction), PROMPT_POSTFIX}, "\n\n")),
+							genai.Text(string(jsonAction) + "\n\n" + PROMPT_POSTFIX),
 						},
 						Role: "user",
 					},
 					&genai.Content{
 						Parts: []genai.Part{
-							genai.Text(strings.Join([]string{SYSTEM_PROMPT, PROMPT_POSTFIX}, "\n\n")),
+							genai.Text(SYSTEM_PROMPT + "\n\n" + PROMPT_POSTFIX),
 						},
 						Role: "model",
 					},
@@ -214,42 +214,54 @@ func main() {
 		// construct the input for AI api
 		chat := IDToChat[requestData.ConversationID]
 
-		
 		cs := model.StartChat()
 
-		//if there are no current NPCS
-		
+		// if there are no current NPCS
 		if len(chat.GameState.GameStatePublic.NPCs) == 0 {
-			log.Println("Generating NPCs")
-			//TODO
-			resp, err := cs.SendMessage(ctx, genai.Text(GENERATE_NPCS))
+			for i := 0; i < 3; i++ {
+				log.Println("Generating NPCs")
 
-			//
-			var text string = ""
-			NPCs := []NPC{} 
+				var resp *genai.GenerateContentResponse
 
-			for k := 0; k < len(resp.Candidates[0].Content.Parts); k++ {
-				part, ok := resp.Candidates[0].Content.Parts[k].(genai.Text)
+				resp, err = cs.SendMessage(ctx, genai.Text(GENERATE_NPCS))
 
-				if !ok {
-					log.Println("The response was not a text response.")
-					err = errors.New("The response was not a text response.")
+				var text string = ""
+				NPCs := []NPC{}
+
+				for j := 0; j < len(resp.Candidates); j++ {
+					for k := 0; k < len(resp.Candidates[j].Content.Parts); k++ {
+						part, ok := resp.Candidates[j].Content.Parts[k].(genai.Text)
+
+						if !ok {
+							log.Println("The response was not a text response.")
+							err = errors.New("The response was not a text response.")
+							continue
+						}
+
+						text = text + string(part)
+					}
+
+					log.Println(text)
+					err = json.Unmarshal([]byte(text), &NPCs)
+
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+
+					// modify the input
+					chat.GameState.NPCs = NPCs
+					break
+				}
+
+				if err != nil {
+					log.Println(err)
 					continue
 				}
 
-				text = strings.Join([]string{text, string(part)}, "")
+				break
 			}
-
-			log.Println(text)
-			err = json.Unmarshal([]byte(text), &NPCs)
-
-			if err != nil {
-				log.Println(err)
-			}
-			//modify the input
-			chat.GameState.NPCs = NPCs
 		}
-		
 
 		log.Println(chat.GameState.GameStatePublic.Player.Character.Stats)
 
@@ -268,12 +280,13 @@ func main() {
 
 		var text string
 		var AIResp OutcomeOutput
+		err = nil
 
 		for i := 0; i < 3; i++ {
-			var err error = nil
+			var resp *genai.GenerateContentResponse
 
 			cs.History = chat.History
-			resp, err := cs.SendMessage(ctx, genai.Text(inputJSON))
+			resp, err = cs.SendMessage(ctx, genai.Text(inputJSON))
 
 			if err != nil {
 				log.Println("Error sending message:", err)
@@ -311,6 +324,10 @@ func main() {
 			}
 
 			break
+		}
+
+		if err != nil {
+			return
 		}
 
 		chat.GameState.Scenario = AIResp.Scenario
