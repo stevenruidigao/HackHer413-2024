@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/google/generative-ai-go/genai"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
+
 	"google.golang.org/api/option"
 )
 
@@ -33,195 +36,63 @@ type Skill struct {
 	Level       int    `json:"level"`
 }
 
-type GameState struct {
-	Scenario  string         `json:"-"`
+type Character struct {
+	Name      string         `json:"name"`
 	Inventory []Item         `json:"inventory"`
-	GameTime  int            `json:"game_time"`
 	Stats     map[string]int `json:"stats"`
 	Skills    []Skill        `json:"skills"`
 }
 
-type AIResponse struct {
-	GameState
-	Outcome     string            `json:"outcome"`
-	NextActions []PotentialAction `json:"next_actions"`
+type Player struct {
+	Character
 }
 
-type AIInput struct {
+type NPC struct {
+	Character
+	Description string `json:"description"`
+}
+
+type GameState struct {
+	Scenario string `json:"-"`
+	GameTime int    `json:"game_time"`
+	Player   Player `json:"player"`
+	NPCs     []NPC  `json:npcs"`
+}
+
+type OutputCharacter struct {
+	Name        string `json:"name"`
+	ItemsLost   []Item `json:"items_lost"`
+	ItemsGained []Item `json:"items_gained"`
+	DamageTaken int    `json:"damage_taken"`
+}
+
+type OutcomeOutput struct {
+	Player      OutputCharacter   `json:"player"`
+	Outcome     string            `json:"outcome"`
+	NextActions []PotentialAction `json:"next_actions"`
+	NPCs        []OutputCharacter `json:npcs"`
+}
+
+type ActionInput struct {
 	GameState
 	Action string `json:"action"`
 }
 
 type Chat struct {
-	GameState      GameState
-	ConversationID string `json:"conversationID"`
-	History        []*genai.Content
+	ConversationID string           `json:"conversation_id"`
+	GameState      GameState        `json:"game_state"`
+	History        []*genai.Content `json:"-"`
 }
 
 type RequestData struct {
-	Action         string `json:"action"`
 	ConversationID string `json:"conversationID"`
+	Action         string `json:"action"`
+	Name           string `json:"name"`
+	Scenario       string `json:"scenario"`
 }
 
 func main() {
-	idToChat := make(map[string]Chat)
-	idToChat["1"] = Chat{
-		GameState: GameState{
-			Scenario: "A dragon has abducted the prince.",
-			Stats: map[string]int{
-				"INT": 1,
-				"LUK": 1,
-				"STR": 1,
-			},
-		},
-		History: []*genai.Content{
-			&genai.Content{
-				Parts: []genai.Part{
-					genai.Text(`{
-					"action": "Begin the game.",
-					"scenario": "A dragon has abducted the prince.",
-					"inventory": [],
-					"game_time": 0,
-					"stats": {
-						"INT": 1,
-						"LUK": 1,
-						"STR": 1
-					},
-					"skills": []
-				}
-	
-				Respond only in JSON. Do not include anything else in the response.`),
-				},
-				Role: "user",
-			},
-			&genai.Content{
-				Parts: []genai.Part{
-					genai.Text(`You are a storytelling game master. The user will tell you what they do (in JSON), and you will respond with the result (in JSON) and possible next actions.
-	
-				Example of user input:
-				{
-				 	"action": "Inspect the situation",
-					"scenario": "Fighting a dragon",
-					"inventory": [
-						{
-							"name": "potato",
-							"description": "A potato."
-						},
-						{
-							"name": "wand",
-							"description": "A magic wand."
-						},
-						{
-							"name": "computer",
-							"description": "A Dell laptop."
-						}
-					],
-					"game_time": 10,
-					"stats": {
-						"INT": 100,
-						"LUK": 30,
-						"STR": 4
-					},
-					"skills": [{
-						"name": "Programming",
-						"description": "Can code to defeat computer viruses.",
-						"level": 10
-					}]
-				}
-	
-				Example of a response you can give (in JSON):
-				{
-				  "outcome": "Outcome of action",
-				  "scenario": "Updated scenario",
-				  "inventory": [
-					  {
-						  "name": "potato",
-						  "description": "A potato."
-					  },
-					  {
-						  "name": "wand",
-						  "description": "A magic wand."
-					  },
-					  {
-						  "name": "computer",
-						  "description": "A Dell laptop."
-					  }
-				  ],
-				  "game_time": 11,
-				  "stats": {
-					  "INT": 100,
-					  "LUK": 30,
-					  "STR": 4
-				  },
-				  "skills": [{
-					  "name": "Programming",
-					  "description": "Can code to defeat computer viruses.",
-					  "level": 10
-				  }],
-				  "next_actions": [
-					{
-					  "description": "Go for the jugular (high risk, high reward)",
-					  "time_cost": 1,
-					  "potential_results": [
-						{
-						  "text": "You land a critical blow, dealing devastating damage! But beware the dragon's fiery breath!",
-						  "probability": 0.25
-						},
-						{
-						  "text": "The dragon deflects your attack and retaliates with a powerful swipe!",
-						  "probability": 0.5
-						},
-						{
-						  "text": "Your aim falters, missing the vulnerable spot entirely.",
-						  "probability": 0.25
-						}
-					  ]
-					},
-					{
-					  "description": "Weaken its defenses (moderate risk, moderate reward)",
-					  "time_cost": 2,
-					  "potential_results": [
-						{
-						  "text": "You manage to cripple a wing, hindering the dragon's flight and maneuverability!",
-						  "probability": 0.35
-						},
-						{
-						  "text": "Your attacks chip away at its scales, slowly wearing it down and exposing weak points.",
-						  "probability": 0.5
-						},
-						{
-						  "text": "The dragon shrugs off your blows, its thick hide proving resilient. Be wary of its tail swing!",
-						  "probability": 0.15
-						}
-					  ]
-					},
-					{
-					  "description": "Distract and escape (low risk, low reward)",
-					  "time_cost": 1,
-					  "potential_results": [
-						{
-						  "text": "You successfully divert the dragon's attention with a well-placed object, creating an opening to flee!",
-						  "probability": 0.4
-						},
-						{
-						  "text": "The distraction fails, angering the dragon further! It unleashes a fiery breath in your direction!",
-						  "probability": 0.4
-						},
-						{
-						  "text": "You stumble during your escape attempt, leaving yourself vulnerable to the dragon's sharp claws.",
-						  "probability": 0.2
-						}
-					  ]
-					}
-				  ]
-				}
-	
-				Respond only in JSON. Do not include anything else in the response. Do not allow the user to significantly modify the state of the game without good reason.`),
-				},
-				Role: "model",
-			},
-		},
-	}
+	IDToChat := make(map[string]Chat)
 
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
@@ -241,223 +112,101 @@ func main() {
 
 	// For text-only input, use the gemini-pro model
 	model := client.GenerativeModel("gemini-pro")
-	// Initialize the chat
-	cs := model.StartChat()
-	cs.History = []*genai.Content{
-		&genai.Content{
-			Parts: []genai.Part{
-				genai.Text(`{
-					"action": "Begin the game.",
-					"scenario": "A dragon has abducted the prince.",
-					"inventory": [],
-					"game_time": 0,
-					"stats": {
-						"INT": 1,
-						"LUK": 1,
-						"STR": 1
-					},
-					"skills": []
-				}
-	
-				Respond only in JSON. Do not include anything else in the response.`),
-			},
-			Role: "user",
-		},
-		&genai.Content{
-			Parts: []genai.Part{
-				genai.Text(`You are a storytelling game master. The user will tell you what they do (in JSON), and you will respond with the result (in JSON) and possible next actions.
-	
-				Example of user input:
-				{
-				 	"action": "Inspect the situation",
-					"scenario": "Fighting a dragon",
-					"inventory": [
-						{
-							"name": "potato",
-							"description": "A potato."
-						},
-						{
-							"name": "wand",
-							"description": "A magic wand."
-						},
-						{
-							"name": "computer",
-							"description": "A Dell laptop."
-						}
-					],
-					"game_time": 10,
-					"stats": {
-						"INT": 100,
-						"LUK": 30,
-						"STR": 4
-					},
-					"skills": [{
-						"name": "Programming",
-						"description": "Can code to defeat computer viruses.",
-						"level": 10
-					}]
-				}
-	
-				Example of a response you can give (in JSON):
-				{
-				  "outcome": "Outcome of action",
-				  "scenario": "Updated scenario",
-				  "inventory": [
-					  {
-						  "name": "potato",
-						  "description": "A potato."
-					  },
-					  {
-						  "name": "wand",
-						  "description": "A magic wand."
-					  },
-					  {
-						  "name": "computer",
-						  "description": "A Dell laptop."
-					  }
-				  ],
-				  "game_time": 11,
-				  "stats": {
-					  "INT": 100,
-					  "LUK": 30,
-					  "STR": 4
-				  },
-				  "skills": [{
-					  "name": "Programming",
-					  "description": "Can code to defeat computer viruses.",
-					  "level": 10
-				  }],
-				  "next_actions": [
-					{
-					  "description": "Go for the jugular (high risk, high reward)",
-					  "time_cost": 1,
-					  "potential_results": [
-						{
-						  "text": "You land a critical blow, dealing devastating damage! But beware the dragon's fiery breath!",
-						  "probability": 0.25
-						},
-						{
-						  "text": "The dragon deflects your attack and retaliates with a powerful swipe!",
-						  "probability": 0.5
-						},
-						{
-						  "text": "Your aim falters, missing the vulnerable spot entirely.",
-						  "probability": 0.25
-						}
-					  ]
-					},
-					{
-					  "description": "Weaken its defenses (moderate risk, moderate reward)",
-					  "time_cost": 2,
-					  "potential_results": [
-						{
-						  "text": "You manage to cripple a wing, hindering the dragon's flight and maneuverability!",
-						  "probability": 0.35
-						},
-						{
-						  "text": "Your attacks chip away at its scales, slowly wearing it down and exposing weak points.",
-						  "probability": 0.5
-						},
-						{
-						  "text": "The dragon shrugs off your blows, its thick hide proving resilient. Be wary of its tail swing!",
-						  "probability": 0.15
-						}
-					  ]
-					},
-					{
-					  "description": "Distract and escape (low risk, low reward)",
-					  "time_cost": 1,
-					  "potential_results": [
-						{
-						  "text": "You successfully divert the dragon's attention with a well-placed object, creating an opening to flee!",
-						  "probability": 0.4
-						},
-						{
-						  "text": "The distraction fails, angering the dragon further! It unleashes a fiery breath in your direction!",
-						  "probability": 0.4
-						},
-						{
-						  "text": "You stumble during your escape attempt, leaving yourself vulnerable to the dragon's sharp claws.",
-						  "probability": 0.2
-						}
-					  ]
-					}
-				  ]
-				}
-	
-				Respond only in JSON. Do not include anything else in the response. Do not allow the user to significantly modify the state of the game without good reason.`),
-			},
-			Role: "model",
-		},
-	}
 
-	resp, err := cs.SendMessage(ctx, genai.Text(`{
-		"action": "Assess the situation.",
-		"scenario": "A dragon has abducted the prince.",
-		"inventory": [],
-		"game_time": 0,
-		"stats": {
-			"INT": 1,
-			"LUK": 1,
-			"STR": 1
-		},
-		"skills": []
-	}
-	
-	Respond only in JSON. Do not include anything else in the response.`))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	text, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
-
-	log.Println(text)
-
-	if !ok {
-		log.Fatal("wrong")
-	}
-
-	AIResponse1 := AIResponse{}
-
-	err = json.Unmarshal([]byte(text), &AIResponse1)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println(AIResponse1)
-	log.Printf("AI Response from google api: %s", AIResponse1)
+	/* Comment used to be here */
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/submit", func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
 		if r.Method != http.MethodPost {
-			http.Error(w, "Only POST method is accepted", http.StatusMethodNotAllowed)
+			http.Error(w, "Only POST requests are allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
 		// parsing the body
 		var requestData RequestData
+
 		if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+
 			return
 		}
 
-		// construct the input for ai api
-		chat := idToChat[requestData.ConversationID]
-		APIInput := AIInput{
+		if len(requestData.ConversationID) == 0 {
+			gameState := GameState{
+				Scenario: requestData.Scenario,
+				GameTime: 0,
+				Player: Player{
+					Character: Character{
+						Name:      requestData.Name,
+						Inventory: []Item{},
+						Stats: map[string]int{
+							"HP":  10,
+							"INT": 1,
+							"LUK": 1,
+							"STR": 1,
+						},
+						Skills: []Skill{},
+					},
+				},
+				NPCs: []NPC{},
+			}
+
+			action := ActionInput{
+				Action:    "Begin the game.",
+				GameState: gameState,
+			}
+
+			jsonAction, err := json.Marshal(action)
+
+			log.Println(string(jsonAction))
+
+			if err != nil {
+				log.Fatal("Error marshalling action to JSON:", err)
+			}
+
+			chat := Chat{
+				ConversationID: uuid.NewString(),
+				GameState:      gameState,
+				History: []*genai.Content{
+					&genai.Content{
+						Parts: []genai.Part{
+							genai.Text(strings.Join([]string{string(jsonAction), PROMPT_POSTFIX}, "\n\n")),
+						},
+					},
+					&genai.Content{
+						Parts: []genai.Part{
+							genai.Text(strings.Join([]string{SYSTEM_PROMPT, PROMPT_POSTFIX}, "\n\n")),
+						},
+						Role: "model",
+					},
+				},
+			}
+
+			IDToChat[chat.ConversationID] = chat
+		}
+
+		// construct the input for AI api
+		chat := IDToChat[requestData.ConversationID]
+
+		action := ActionInput{
 			GameState: chat.GameState,
 			Action:    requestData.Action,
 		}
-		inputJSON, err := json.Marshal(APIInput)
+
+		inputJSON, err := json.Marshal(action)
+
 		if err != nil {
 			log.Fatal("Error marshalling input to JSON:", err)
 		}
 
 		cs := model.StartChat()
 		cs.History = chat.History
+
 		resp, err := cs.SendMessage(ctx, genai.Text(inputJSON))
+
 		if err != nil {
 			log.Fatal("Error sending message:", err)
 		}
@@ -467,24 +216,70 @@ func main() {
 		}
 
 		text, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
+
 		if !ok {
-			log.Fatal("wrong")
+			log.Fatal("The response was not a text response.")
 		}
+
 		log.Println(text)
 
-		AIResponse1 := AIResponse{}
-		err = json.Unmarshal([]byte(text), &AIResponse1)
+		AIResp := OutcomeOutput{}
+
+		err = json.Unmarshal([]byte(text), &AIResp)
+
 		if err != nil {
 			log.Fatal(err)
 		}
-		chat.GameState = AIResponse1.GameState
-		chat.History = cs.History
-		idToChat[requestData.ConversationID] = chat
-		defer r.Body.Close()
 
-		//fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-		//fmt.Fprintf(w, "Hello, %q. Received action: %s, conversation ID: %s", html.EscapeString(r.URL.Path), requestData.Action, requestData.ConversationID)
-		json.NewEncoder(w).Encode(chat.GameState)
+		chat.GameState.Player.Stats["HP"] -= AIResp.Player.DamageTaken
+
+		for i := 0; i < len(AIResp.Player.ItemsGained); i++ {
+			chat.GameState.Player.Character.Inventory = append(chat.GameState.Player.Character.Inventory, AIResp.Player.ItemsGained[i])
+		}
+
+		for i := 0; i < len(AIResp.Player.ItemsLost); i++ {
+			for j := 0; j < len(chat.GameState.Player.Character.Inventory); j++ {
+				if chat.GameState.Player.Character.Inventory[j].Name == AIResp.Player.ItemsLost[i].Name {
+					newInventory := make([]Item, 0)
+					newInventory = append(newInventory, chat.GameState.Player.Character.Inventory[:j]...)
+					newInventory = append(newInventory, chat.GameState.Player.Character.Inventory[j+1:]...)
+					chat.GameState.Player.Inventory = newInventory
+
+					break
+				}
+			}
+		}
+
+		for i := 0; i < len(AIResp.NPCs); i++ {
+			for j := 0; j < len(chat.GameState.NPCs); j++ {
+				if chat.GameState.NPCs[j].Name == AIResp.NPCs[i].Name {
+					chat.GameState.NPCs[j].Stats["HP"] -= AIResp.NPCs[i].DamageTaken
+
+					for i := 0; i < len(AIResp.NPCs[i].ItemsGained); i++ {
+						chat.GameState.NPCs[j].Character.Inventory = append(chat.GameState.NPCs[j].Character.Inventory, AIResp.NPCs[i].ItemsGained[i])
+					}
+
+					for i := 0; i < len(AIResp.NPCs[i].ItemsLost); i++ {
+						for j := 0; j < len(chat.GameState.NPCs[j].Character.Inventory); j++ {
+							if chat.GameState.NPCs[j].Character.Inventory[j].Name == AIResp.NPCs[i].ItemsLost[i].Name {
+								newInventory := make([]Item, 0)
+								newInventory = append(newInventory, chat.GameState.NPCs[j].Character.Inventory[:j]...)
+								newInventory = append(newInventory, chat.GameState.NPCs[j].Character.Inventory[j+1:]...)
+								chat.GameState.NPCs[j].Character.Inventory = newInventory
+
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+
+		chat.History = cs.History
+
+		IDToChat[requestData.ConversationID] = chat
+
+		json.NewEncoder(w).Encode(chat)
 	})
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
