@@ -242,6 +242,7 @@ func main() {
 
 			if err != nil {
 				log.Println("Error sending message:", err)
+				continue
 			}
 
 			for j := 0; j < len(resp.Candidates); j++ {
@@ -333,6 +334,9 @@ func main() {
 
 		json.NewEncoder(w).Encode(chatResponse)
 	})
+
+	fs := http.FileServer(http.Dir("./public"))
+	mux.Handle("/", http.StripPrefix("/", fs))
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }

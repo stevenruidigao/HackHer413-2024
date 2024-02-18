@@ -18,7 +18,7 @@ function App() {
   //send data/receive data
   function send(convId, userAction, name, scenario) {
     console.log("SENDING THE USER INPUT UWUW: "+userAction)
-    let url = "/submit";
+    let url = "http://localhost:8080/submit";
     const response = fetch(url, {
       method: "POST", // *GET, POST, PUT, DELETE, etc.
       headers: {
