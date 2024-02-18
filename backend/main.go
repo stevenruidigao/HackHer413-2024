@@ -281,6 +281,21 @@ func main() {
 
 					// modify the input
 					chat.GameState.NPCs = NPCs
+
+					for i := 0; i < len(NPCs); i++ {
+						if chat.GameState.NPCs[i].Inventory == nil {
+							chat.GameState.NPCs[i].Inventory = []Item{}
+						}
+
+						if chat.GameState.NPCs[i].Stats == nil {
+							chat.GameState.NPCs[i].Stats = map[string]int{}
+						}
+
+						if chat.GameState.NPCs[i].Skills == nil {
+							chat.GameState.NPCs[i].Skills = []Skill{}
+						}
+					}
+
 					break
 				}
 
