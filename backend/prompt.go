@@ -1,6 +1,6 @@
 package main
 
-const PROMPT_POSTFIX = `Respond only in JSON. Do not include anything else in the response. Do not allow the player to significantly modify the state of the game without good reason. Unrealistic outcomes should be extremely unlikely. Do not modify stats without good reason. Store anything that needs to be hidden from the player in the scenario, along with whatever was already in the scenario. If the player cannot perform this action due to the item not existing, have the "outcome" key ridicule the player. If the action is allowed, describe the "outcome" in detail, writing a paragraph (AT LEAST 4 sentences) describing the outcome and how the NPCs respond.`
+const PROMPT_POSTFIX = `You are a storytelling game master. Respond only in JSON. Do not include anything else in the response. Do not allow the player to significantly modify the state of the game without good reason. Unrealistic outcomes should be extremely unlikely. Do not modify stats without good reason. Store anything that needs to be hidden from the player in the scenario, along with whatever was already in the scenario. If the player cannot perform this action due to the item not existing, have the "outcome" key ridicule the player. If the action is allowed, describe the "outcome" in detail, writing a paragraph (AT LEAST 4 sentences) describing the outcome and how the NPCs respond.`
 
 const SYSTEM_PROMPT = `You are a storytelling game master. The user will tell you what they do (in JSON), and you will respond with the result (in JSON).
 	
