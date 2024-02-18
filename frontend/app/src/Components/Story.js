@@ -10,7 +10,13 @@ function Story(props) {
 <div id="popup" class="overlay hidden">
   <div class="popup-content">
     <p>{props.story}</p>
-    <button class="popup-btn btn" onClick = {()=>{document.getElementById("popup").className = "overlay hidden"}}>Back</button>
+    <button class="popup-btn btn" onClick = {()=>{
+      document.getElementById("popup").className = "overlay hidden";
+      if (props.isOver) {
+        console.log("GG")
+        document.getElementById("ending").className = "overlay";
+      }
+      }}>Back</button>
   </div>
 </div>
 

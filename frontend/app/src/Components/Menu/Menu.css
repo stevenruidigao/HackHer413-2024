@@ -67,7 +67,8 @@
 }
 
 .submit {
-  width: 3em;
+  width: 5em;
+  height: 4vh;
 }
 
 .selected {
@@ -117,6 +118,7 @@
   font-size: 16px;
   resize: none;
   display: block;
+  padding: 10px;
 }
 
 /* Item */
@@ -152,4 +154,30 @@
 .story {
   width: 100%;
   background-color: aquamarine;
+}
+
+/* Stat */
+
+.stats {
+  width: 100%;
+  overflow-y: scroll;
+  height: 100%;
+  /* display: flex; */
+}
+
+.stat-container {
+  flex-wrap: wrap;
+  display: flex;
+}
+
+.skill-container {
+  flex-wrap: wrap;
+  display: flex;
+}
+
+.stat-title {
+  display: block;
+}
+.skill-title {
+  display: block;
 }

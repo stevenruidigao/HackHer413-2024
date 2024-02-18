@@ -4,6 +4,7 @@ import './Menu.css'
 
 import Act from './Act.js'
 import Inventory from './Inventory.js'
+import Stat from './Stat.js'
 
 function Menu(props) {
   const [tab, setTab] = useState(0);
@@ -22,8 +23,10 @@ function Menu(props) {
       <div className="right">
         {
           tab === 0 ? (<Act send={props.send}/>) :
-            tab === 1 && props.result.game_state ? (<Inventory items={props.result.game_state.player.inventory}/>) :
-              (<h3>Skills: TBA</h3>)
+            tab === 1 ? 
+              props.result.game_state ? (<Inventory items={props.result.game_state.player.inventory}/>) :
+                (<h3>Items: TBA</h3>) : 
+                  props.result.game_state ? (<Stat stats={props.result.game_state.player.stats} skills = {props.result.game_state.player.skills}/>) : (<h3>Skills: TBA</h3>)
         }
       </div>
 

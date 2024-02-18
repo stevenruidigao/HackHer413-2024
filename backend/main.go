@@ -59,6 +59,7 @@ type GameStatePublic struct {
 	GameTime int    `json:"game_time"`
 	Player   Player `json:"player"`
 	NPCs     []NPC  `json:"npcs"`
+	IsOver bool `json:"is_over"`
 }
 
 type GameState struct {
@@ -76,6 +77,7 @@ type OutputCharacter struct {
 type OutcomeOutput struct {
 	Outcome     string            `json:"outcome"`
 	Scenario    string            `json:"scenario"`
+	IsOver bool `json:"is_over"`
 	Player      OutputCharacter   `json:"player"`
 	NPCs        []OutputCharacter `json:"npcs"`
 	NextActions []PotentialAction `json:"next_actions"`
@@ -254,7 +256,7 @@ func main() {
 		cs := model.StartChat()
 
 		// if there are no current NPCS
-		if len(chat.GameState.GameStatePublic.NPCs) == 0 {
+		if len(chat.GameState.GameStatePublic.NPCs) == 0 || chat.GameState.GameStatePublic.IsOver {
 			for i := 0; i < 3; i++ {
 				log.Println("Generating NPCs")
 
@@ -408,7 +410,12 @@ func main() {
 		}
 
 		chat.GameState.Scenario = AIResp.Scenario
+		chat.GameState.GameStatePublic.IsOver = AIResp.IsOver
 		chat.GameState.GameStatePublic.Player.Character.Stats["HP"] -= AIResp.Player.DamageTaken
+
+		if chat.GameState.GameStatePublic.Player.Character.Stats["HP"] <= 0 {
+			chat.GameState.GameStatePublic.IsOver = true
+		}
 
 		for i := 0; i < len(AIResp.Player.ItemsGained); i++ {
 			chat.GameState.GameStatePublic.Player.Character.Inventory = append(chat.GameState.GameStatePublic.Player.Character.Inventory, AIResp.Player.ItemsGained[i])
@@ -458,6 +465,7 @@ func main() {
 				}
 			}
 		}
+
 
 		chat.History = cs.History
 		IDToChat[requestData.ConversationID] = &chat

@@ -1,6 +1,6 @@
 package main
 
-const PROMPT_POSTFIX = `Respond only in JSON. Do not include anything else in the response. Do not allow the player to significantly modify the state of the game without good reason. Unrealistic outcomes should be extremely unlikely. Do not modify stats without good reason. Store anything that needs to be hidden from the player in the scenario, along with whatever was already in the scenario. If the player cannot perform this action due to the item not existing, have the "outcome" key ridicule the player. If the action is allowed, describe the "outcome" in detail, writing a paragraph (AT LEAST 5 sentences) describing the outcome and how the NPCs respond.`
+const PROMPT_POSTFIX = `Respond only in JSON. Do not include anything else in the response. Do not allow the player to significantly modify the state of the game without good reason. Unrealistic outcomes should be extremely unlikely. Do not modify stats without good reason. Store anything that needs to be hidden from the player in the scenario, along with whatever was already in the scenario. If the player cannot perform this action due to the item not existing, have the "outcome" key ridicule the player. If the action is allowed, describe the "outcome" in detail, writing a paragraph (AT LEAST 4 sentences) describing the outcome and how the NPCs respond.`
 
 const SYSTEM_PROMPT = `You are a storytelling game master. The user will tell you what they do (in JSON), and you will respond with the result (in JSON).
 	
@@ -91,7 +91,7 @@ Example of user input:
 
 When responding, dictate the outcome of the player's actions (in JSON), while considering if the player has the necessary items in their inventory.
 If the player cannot perform this action due to the item not existing, have the "outcome" key ridicule the player.
-If the action is allowed, describe the "outcome" in detail, writing a paragraph (AT LEAST 5 sentences) describing the outcome and how the NPCs respond.
+If the action is allowed, describe the "outcome" in detail, writing a paragraph (AT LEAST 4 sentences) describing the outcome and how the NPCs respond.
 Please keep in mind that an enemy will not be defeated until its HP reaches 0.
 
 Additionally, for each player and NPC, list any items consumed (in JSON) and items gained (in JSON). Also list damage taken.
@@ -99,7 +99,7 @@ For every player and NPC, have a key for "items_lost", "items_gained", and "dama
 Do NOT mirror the input JSON, make sure to include items lost, items gained, and damage taken.
 Please use the exact keys in the following example.  
 
-Finally, if all enemies are placated or defeated, then set "is_over" to true.
+Finally, if all enemies are defeated or the plot has resolved, then set "is_over" to true.
 
 Example of a response you can give (in JSON):
 {
