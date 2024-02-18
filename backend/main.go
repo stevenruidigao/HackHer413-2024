@@ -105,7 +105,7 @@ type RequestData struct {
 }
 
 func main() {
-	IDToChat := make(map[string]Chat)
+	IDToChat := make(map[string]*Chat)
 
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
@@ -151,6 +151,10 @@ func main() {
 		log.Println("Conversation ID:", requestData.ConversationID, "Length:", len(requestData.ConversationID))
 
 		if len(requestData.ConversationID) == 0 {
+			requestData.ConversationID = uuid.NewString()
+		}
+
+		if IDToChat[requestData.ConversationID] == nil {
 			gameState := GameState{
 				Scenario: requestData.Scenario,
 				GameStatePublic: GameStatePublic{
@@ -190,7 +194,7 @@ func main() {
 			}
 
 			chat := Chat{
-				ConversationID: uuid.NewString(),
+				ConversationID: requestData.ConversationID,
 				GameState:      gameState,
 				History: []*genai.Content{
 					&genai.Content{
@@ -208,12 +212,12 @@ func main() {
 				},
 			}
 
-			IDToChat[chat.ConversationID] = chat
+			IDToChat[chat.ConversationID] = &chat
 			requestData.ConversationID = chat.ConversationID
 		}
 
 		// construct the input for AI api
-		chat := IDToChat[requestData.ConversationID]
+		chat := *IDToChat[requestData.ConversationID]
 
 		cs := model.StartChat()
 
@@ -402,7 +406,7 @@ func main() {
 		}
 
 		chat.History = cs.History
-		IDToChat[requestData.ConversationID] = chat
+		IDToChat[requestData.ConversationID] = &chat
 
 		chatResponse := ChatResponse{
 			ConversationID: chat.ConversationID,
