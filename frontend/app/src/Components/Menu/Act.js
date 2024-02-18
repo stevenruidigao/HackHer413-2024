@@ -9,7 +9,7 @@ function Act(props) {
       <textarea className="text-input" placeholder="What do you do?"></textarea>
       <div align="right">
         <label for="submit-action" hidden>Submit</label>
-        <button id="submit-action" className="btn submit">{">"}</button>
+        <button id="submit-action" className="btn submit" onClick={()=>{props.send(document.getElementsByClassName("text-input")[0].value)}}>{">"}</button>
       </div>
     </div>
 

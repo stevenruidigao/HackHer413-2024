@@ -5,7 +5,7 @@ import './Menu.css'
 import Act from './Act.js'
 import Inventory from './Inventory.js'
 
-function Menu() {
+function Menu(props) {
   const [tab, setTab] = useState(0);
   // let tab, setTab = (0, () => {});
 
@@ -21,7 +21,7 @@ function Menu() {
       </div>
       <div className="right">
         {
-          tab === 0 ? (<Act />) :
+          tab === 0 ? (<Act send={props.send}/>) :
             tab === 1 ? (<Inventory items={[1,"u",1,1,1,1,1]}/>) :
               (<h3>uwu</h3>)
         }

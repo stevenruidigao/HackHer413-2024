@@ -1,0 +1,35 @@
+@keyframes swing { 
+    0% { transform: rotate(15deg); } 
+    50% { transform: rotate(-15deg); } 
+    100% { transform: rotate(15deg); } 
+ } 
+
+.target-container {
+    animation: swing 1.25s alternate infinite ease-in-out;
+ }
+.target {
+    width: 30vh;
+    height: 30vh;
+    cursor: pointer;
+    line-height: 1.25;
+    margin: 0;
+    position: relative;
+    text-decoration: none;
+    transition: all 250ms;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    vertical-align: baseline;
+    transition: transform 0.3s ease;
+    
+  }
+
+  .target:hover {
+    transform: scale(1.2); 
+  }
+  
+  .target:active {
+    transform: scale(0.8);
+  }
+
+  
