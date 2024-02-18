@@ -141,3 +141,10 @@
   flex-wrap: wrap;
   display: flex;
 }
+
+
+/* Story */
+.story {
+  width: 100%;
+  background-color: aquamarine;
+}

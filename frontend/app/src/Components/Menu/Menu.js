@@ -22,7 +22,7 @@ function Menu(props) {
       <div className="right">
         {
           tab === 0 ? (<Act send={props.send}/>) :
-            tab === 1 ? (<Inventory items={[1,"u",1,1,1,1,1]}/>) :
+            tab === 1 ? (<Inventory items={props.result.game_state.player.inventory}/>) :
               (<h3>uwu</h3>)
         }
       </div>

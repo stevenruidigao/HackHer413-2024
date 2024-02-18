@@ -4,12 +4,15 @@ import './App.css';
 
 import Menu from './Components/Menu/Menu.js'
 import ClickerGame from './Components/Minigame/ClickerGame.js'
+import Story from './Components/Story.js'
 
 function App() {
   const [minigame, setMinigame] = useState(true);
   const [playerTurn, setPlayerTurn] = useState(true);
   
   const [attackPower, setAttackpower] = useState(0);
+
+  const [result, setResult] = useState({});
   function incrPower(x) {
     setAttackpower(attackPower + x);
   }
@@ -33,8 +36,8 @@ function App() {
       }),
     }).then(data => data.json()).then(json => {
       //update state
-      setAttackpower(99);
-      console.log("SERVER DATA RECEIVED")
+      setResult(json)
+      console.log(json);
     });
   }
 
@@ -42,12 +45,15 @@ function App() {
   return (
     <div className="App">
       <div>
-        <Menu tab={1} send={(userAction)=>{send("", userAction, "arky", "The player is fighting against Kafka, a mind controlling fugitive who knows the secrets of the universe.")}}/>
+        <Menu tab={1} send={(userAction)=>{
+          send("", userAction, "arky", "The player is fighting against Kafka, a mind controlling fugitive who knows the secrets of the universe.")
+          }} result = {result}/>
         <h1>AIdventure</h1>
 
         {minigame ? (<ClickerGame handleClick = {()=>{incrPower(0.5)}}/>) : (<></>)}
   
       </div>
+      <Story story = {result.outcome}/>
     </div>
   );
 }

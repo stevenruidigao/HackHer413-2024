@@ -4,9 +4,9 @@ export default function Inventory({items}) {
   return (
     <div className="inventory">
       <h1>ITEMS</h1>
-      <div className = "inventory-container">
+      <div className = "inventory-container" >
       {items.map((item) => {
-        return (<Item name = {item}/>);
+        return (<Item name = {item.name} title = {item.description}/>);
       })}
       </div>
     </div>

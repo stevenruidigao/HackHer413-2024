@@ -1,0 +1,41 @@
+.overlay.hidden {
+    /*display: none; /* Hidden by default */
+    /* animation: fadeOut ease 1s;  */
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.5s ease-in, visibility 0ms ease-in 0.5s;
+}
+
+.overlay {
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    background-color: rgba(0, 0, 0, 0.7); /* Black with opacity */
+    /* animation: fadeIn ease 1s; */
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.5s ease-in;
+}
+
+.popup-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+}
+  
+.popup-btn {
+    float: right;
+    font-size: 28px;
+}
+
+#open-popup {
+    position:absolute;
+    right:0vh;
+    top:70vh;
+    transform: translate(0%, -100%);
+}
