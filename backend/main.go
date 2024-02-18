@@ -128,7 +128,7 @@ func main() {
 
 	// For text-only input, use the gemini-pro model
 	model := client.GenerativeModel("gemini-pro")
-	model.Temperature = genai.Ptr[float32](0.5)
+	model.Temperature = genai.Ptr[float32](0.6)
 
 	model.SafetySettings = []*genai.SafetySetting{
 		&genai.SafetySetting{
@@ -165,10 +165,13 @@ func main() {
 		}
 		//generate skillset
 		skills := []Skill{
-			Skill{Name: "Kung Fu", Description: "A skill that makes you unreasonably good at fighting.", Level: 10},
-			Skill{Name: "Sharp Shot", Description: "A skill that makes you good with guns.", Level: 10},
-			Skill{Name: "Slick Talker", Description: "This skill makes it easy for you to convince others.", Level: 10},
+			Skill{Name: "Kung Fu", Description: "A skill that makes you unreasonably good at fighting in close combat, especially with no weapon.", Level: 10},
+			Skill{Name: "Sharp Shot", Description: "A skill that makes you good with shooting guns and other ranged weapons.", Level: 10},
+			Skill{Name: "Slick Talker", Description: "This skill makes it easy for you to negotiate and convince others.", Level: 10},
 			Skill{Name: "Streetwise", Description: "This skill lets you know the underbelly of society, its criminal networks, hidden secrets, and the people who navigate it.", Level: 10},
+			Skill{Name: "Algorithmic Intelligence", Description: "This skill makes it easy to solve math and CS problems.", Level: 10},
+			Skill{Name: "Acrobatics", Description: "This skill makes it easy for you to dodge, move, and jump around with grace.", Level: 10},
+			Skill{Name: "Ninjitsu", Description: "This skill makes you sneaky and extremely proficient with swords.", Level: 10},
 		}
 
 		//generate items
