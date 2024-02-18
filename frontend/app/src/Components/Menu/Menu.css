@@ -47,6 +47,11 @@
   vertical-align: baseline;
 }
 
+.btn[disabled],
+.btn:disabled {
+  background-color: rgb(141, 141, 141) !important;
+}
+
 .btn:hover {
   background-color: rgb(99, 198, 247);
   box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;

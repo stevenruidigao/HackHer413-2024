@@ -5,6 +5,7 @@ import './App.css';
 import Menu from './Components/Menu/Menu.js'
 import ClickerGame from './Components/Minigame/ClickerGame.js'
 import Story from './Components/Story.js'
+import Entities from './Components/Entities.js'
 
 function App() {
   const [minigame, setMinigame] = useState(true);
@@ -15,9 +16,15 @@ function App() {
   function incrPower(x) {
     setAttackpower(attackPower + x);
   }
+  //scenarios
+  let scenarios = ["You are fighting a battalion of stormtroopers, led by General Grievous!",
+                    "You are fighting a single goblin, who is fueled by hunger and rage.",
+                    "You are meeting the elusive and mysterious Dr. Ratio, who is a master of mathematics and setting traps.",
+                    "You are in a fierce battle against a the wizard lord phoenix and an archmage."]
 
   //send data/receive data
   function send(conversation_id, userAction, name, scenario) {
+    document.getElementById("submit-action").disabled = true;
     console.log("SENDING THE USER INPUT UWUW: "+userAction)
     console.log("into the conversation: "+conversation_id)
     let url = "http://localhost:8080/submit";
@@ -42,6 +49,8 @@ function App() {
 
       //open the story panel
       document.getElementById("popup").className = "overlay"
+      //re-enable
+    document.getElementById("submit-action").disabled = false;
     });
   }
 
@@ -50,7 +59,7 @@ function App() {
     <div className="App">
       <div>
         <Menu tab={1} send={(userAction)=>{
-          send(convId, userAction, "Arky", "The player is fighting against Kafka, a mind controlling fugitive who knows the secrets of the universe.")
+          send(convId, userAction, "Arky", scenarios[Math.floor(Math.random()*scenarios.length)])
           }} result = {result}/>
         <h1>AIdventure</h1>
 
@@ -58,6 +67,8 @@ function App() {
   
       </div>
       <Story story = {result.outcome}/>
+      <Entities result={result}/>
+      
     </div>
   );
 }

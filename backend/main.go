@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 
@@ -127,6 +128,13 @@ func main() {
 	model := client.GenerativeModel("gemini-pro")
 	model.Temperature = genai.Ptr[float32](0.5)
 
+	model.SafetySettings = []*genai.SafetySetting{
+		&genai.SafetySetting{
+			Category: genai.HarmCategoryDangerousContent,
+			Threshold: genai.HarmBlockOnlyHigh,
+		},
+	}
+
 	/* Comment used to be here */
 
 	mux := http.NewServeMux()
@@ -153,6 +161,29 @@ func main() {
 		if len(requestData.ConversationID) == 0 {
 			requestData.ConversationID = uuid.NewString()
 		}
+		//generate skillset
+		skills := []Skill{
+			Skill{Name: "Kung Fu", Description: "A skill that makes you unreasonably good at fighting.", Level: 10},
+			Skill{Name: "Sharp Shot", Description: "A skill that makes you good with guns.", Level: 10},
+			Skill{Name: "Slick Talker", Description: "This skill makes it easy for you to convince others.", Level: 10},
+			Skill{Name: "Streetwise", Description: "This skill lets you know the underbelly of society, its criminal networks, hidden secrets, and the people who navigate it.", Level: 10},
+		}
+
+		//generate items
+		items := []Item{
+			Item{Name: "Samurai Sword", Description: "A steel blade that hisses as its unsheathed.", Quantity: 1},
+			Item{Name: "Black Cleaver", Description: "A dark and sinister blade, used for murder.", Quantity: 1},
+			Item{Name: "Vangaurd's Shield", Description: "A powerful shield meant to protect.", Quantity: 1},
+			Item{Name: "Freeze Ray", Description: "Raygun which is good for immobilizing.", Quantity: 1},
+			Item{Name: "Golden Apples", Description: "Mystical Fruit that increase your strength and defense.", Quantity: 3},
+			Item{Name: "Stick", Description: "Just a stick. For good luck.", Quantity: 1},
+			Item{Name: "Hypnoshroom", Description: "A special mushroom used to hypnotize an enemy. Consumed on use.", Quantity: 1},
+			Item{Name: "Rocket Launcher", Description: "A great weapon for taking out multiple targets, but slow to shoot.", Quantity: 1},
+			Item{Name: "Dual Pistols", Description: "A set of pistols, great for mid ranged combat.", Quantity: 2},
+			Item{Name: "Smoke Grenade", Description: "Good for clouding up enemy vision and gaining the element of surprise.", Quantity: 4},
+			Item{Name: "Currency", Description: "Maybe buy a snack?", Quantity: 50},
+			Item{Name: "Mirror", Description: "Good for self reflection.", Quantity: 1},
+		}
 
 		if IDToChat[requestData.ConversationID] == nil {
 			gameState := GameState{
@@ -162,18 +193,19 @@ func main() {
 					Player: Player{
 						Character: Character{
 							Name:      requestData.Name,
-							Inventory: []Item{},
+							Inventory: []Item{items[rand.Intn(len(items))], items[rand.Intn(len(items))], items[rand.Intn(len(items))]},
 							Stats: map[string]int{
-								"CHR": 1,
-								"CON": 1,
-								"DEX": 1,
-								"INT": 1,
-								"STR": 1,
-								"WIS": 1,
-								"LUK": 1,
+								"CHR": rand.Intn(11),
+								"CON": rand.Intn(11),
+								"DEX": rand.Intn(11),
+								"INT": rand.Intn(11),
+								"STR": rand.Intn(11),
+								"WIS": rand.Intn(11),
+								"LUK": rand.Intn(11),
 								"HP":  10,
+								"MAX_HP": 10,
 							},
-							Skills: []Skill{},
+							Skills: []Skill{skills[rand.Intn(len(skills))]},
 						},
 					},
 					NPCs: []NPC{},
