@@ -6,7 +6,12 @@
 
 .target-container {
     animation: swing 1.25s alternate infinite ease-in-out;
+    width:fit-content;
  }
+ .target-outer {
+    display: flex;
+    justify-content: center;
+}
 .target {
     width: 30vh;
     height: 30vh;
