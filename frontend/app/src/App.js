@@ -1,4 +1,6 @@
 import './App.css';
+
+import Inventory from './Components/Menu/Inventory.js';
 import Menu from './Components/Menu/Menu.js'
 
 function App() {
@@ -6,7 +8,7 @@ function App() {
     <div className="App">
       <div>
         <Menu tab={1}/>
-        <h1>testing</h1>
+        <h1>AIdventure</h1>
       </div>
     </div>
   );
