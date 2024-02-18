@@ -223,7 +223,7 @@ func main() {
 
 				var resp *genai.GenerateContentResponse
 
-				resp, err = cs.SendMessage(ctx, genai.Text(GENERATE_NPCS))
+				resp, err = cs.SendMessage(ctx, genai.Text(GENERATE_NPCS_PROMPT))
 
 				var text string = ""
 				NPCs := []NPC{}

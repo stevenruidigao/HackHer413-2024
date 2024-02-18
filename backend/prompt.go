@@ -305,7 +305,7 @@ Example of a response you can give (in JSON):
 	]
 }`
 
-const GENERATE_NPCS = `You are a storytelling game master. The player is about to start a new scenario, and you must provide NPCs for the player to play with.
+const GENERATE_NPCS_PROMPT = `You are a storytelling game master. The player is about to start a new scenario, and you must provide NPCs for the player to play with.
 These NPCS can be evil or good or neutral by your choice. 
 
 Example of user input:
@@ -347,7 +347,7 @@ Example of user input:
 
 Your task is to create 1-3 npcs for the player to interact with. These npcs may be enemies, friendly, or neutral. These npcs should fit the scenario.
 Please respond in a JSON array.  The array should contain npcs where each npc has a "name", "stats", "inventory" and "skills".
-Be creative and original in your creations. Additionally, you may use or create characters from unrelated settings in order to make things interesting.
+Be creative and original in your creations. You may use generic enemies such as goblins, stormtroopers, or soldiers. Alternatively, you may include famous characters like Goku, Barack Obama, or King Aurthur.
 
 Example of a response you can give (in JSON):
 [
@@ -390,9 +390,6 @@ Example of a response you can give (in JSON):
 	},
 	{
 		"name": "Stormtrooper",
-		"items_lost": [],
-		"items_gained": [],
-		"damage_taken": 0,
 		"stats": {
 			"CHR": 5,
 			"CON": 3,
@@ -424,37 +421,34 @@ Example of a response you can give (in JSON):
 		]
 	},
 	{
-		"name": "Minea Marius",
-		"items_lost": [],
-		"items_gained": [],
-		"damage_taken": 0,
+		"name": "Angry Zombie",
 		"stats": {
 			"CHR": 2,
 			"CON": 3,
 			"DEX": 2,
-			"INT": 40,
+			"INT": -1,
 			"STR": 1,
-			"WIS": 30,
+			"WIS": 0,
 			"LUK": 1,
 			"HP": 10
 		},
 		"skills": [
 			{
-				"name": "Outsmarting",
-				"description": "Will outsmart almost any situation due to his knowledge of algorithms",
-				"level": 10
+				"name": "Regenerative bite",
+				"description": "Will bite an enemy to heal some HP",
+				"level": 3
+			},
+			{
+				"name": "Rage",
+				"description": "Rushes toward an enemy quickly to attack them",
+				"level": 7
 			}
 		],
 		"inventory": [
 			{
-				"name": "High Tech Algorithms Textbook",
-				"description": "The futuristic secrets of computation",
+				"name": "Rotten Flesh",
+				"description": "The gross flesh almost falling off Zombie's body.",
 				"quantity": 2
-			},
-			{
-				"name": "computer",
-				"description": "A Dell laptop from 2050.",
-				"quantity": 1
 			}
 		]
 	},
