@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 import './App.css';
 
-import Inventory from './Components/Menu/Inventory.js';
 import Menu from './Components/Menu/Menu.js'
 import ClickerGame from './Components/Minigame/ClickerGame.js'
 

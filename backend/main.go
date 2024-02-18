@@ -214,6 +214,43 @@ func main() {
 		// construct the input for AI api
 		chat := IDToChat[requestData.ConversationID]
 
+		
+		cs := model.StartChat()
+
+		//if there are no current NPCS
+		
+		if len(chat.GameState.GameStatePublic.NPCs) == 0 {
+			log.Println("Generating NPCs")
+			//TODO
+			resp, err := cs.SendMessage(ctx, genai.Text(GENERATE_NPCS))
+
+			//
+			var text string = ""
+			NPCs := []NPC{} 
+
+			for k := 0; k < len(resp.Candidates[0].Content.Parts); k++ {
+				part, ok := resp.Candidates[0].Content.Parts[k].(genai.Text)
+
+				if !ok {
+					log.Println("The response was not a text response.")
+					err = errors.New("The response was not a text response.")
+					continue
+				}
+
+				text = strings.Join([]string{text, string(part)}, "")
+			}
+
+			log.Println(text)
+			err = json.Unmarshal([]byte(text), &NPCs)
+
+			if err != nil {
+				log.Println(err)
+			}
+			//modify the input
+			chat.GameState.NPCs = NPCs
+		}
+		
+
 		log.Println(chat.GameState.GameStatePublic.Player.Character.Stats)
 
 		action := ActionInput{
@@ -228,8 +265,6 @@ func main() {
 		}
 
 		log.Println("Input JSON:", string(inputJSON))
-
-		cs := model.StartChat()
 
 		var text string
 		var AIResp OutcomeOutput
@@ -248,8 +283,8 @@ func main() {
 			for j := 0; j < len(resp.Candidates); j++ {
 				text = ""
 
-				for i := 0; i < len(resp.Candidates[0].Content.Parts); i++ {
-					part, ok := resp.Candidates[0].Content.Parts[i].(genai.Text)
+				for k := 0; k < len(resp.Candidates[j].Content.Parts); k++ {
+					part, ok := resp.Candidates[j].Content.Parts[k].(genai.Text)
 
 					if !ok {
 						log.Println("The response was not a text response.")

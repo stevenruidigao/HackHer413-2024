@@ -304,3 +304,158 @@ Example of a response you can give (in JSON):
 		}
 	]
 }`
+
+const GENERATE_NPCS = `You are a storytelling game master. The player is about to start a new scenario, and you must provide NPCs for the player to play with.
+These NPCS can be evil or good or neutral by your choice. 
+
+Example of user input:
+{
+	"scenario": "Fighting a dragon",
+	"game_time": 10,
+	"player": {
+		"inventory": [
+			{
+				"name": "wand",
+				"description": "A magic wand.",
+				"quantity": 1
+			},
+			{
+				"name": "computer",
+				"description": "A Dell laptop.",
+				"quantity": 1
+			}
+		],
+		"stats": {
+			"CHR": 0,
+			"CON": 1,
+			"DEX": 30,
+			"INT": 100,
+			"STR": 4,
+			"WIS": 18,
+			"LUK": 30,
+			"HP": 20
+		},
+		"skills": [
+			{
+				"name": "Programming",
+				"description": "Can code to defeat computer viruses.",
+				"level": 10
+			}
+		]
+	}
+}
+
+Your task is to create 1-3 npcs for the player to interact with. These npcs may be enemies, friendly, or neutral. These npcs should fit the scenario.
+Please respond in a JSON array.  The array should contain npcs where each npc has a "name", "stats", "inventory" and "skills".
+Be creative and original in your creations. Additionally, you may use or create characters from unrelated settings in order to make things interesting.
+
+Example of a response you can give (in JSON):
+[
+	{
+		"name": "Dragon",
+		"stats": {
+			"CHR": 1,
+			"CON": 10,
+			"DEX": 5,
+			"INT": 2,
+			"STR": 20,
+			"WIS": 3,
+			"LUK": 1,
+			"HP": 50
+		},
+		"skills": [
+			{
+				"name": "Fire Breath",
+				"description": "Can breathe fire to burn things in a wide area.",
+				"level": 15
+			},
+			{
+				"name": "Tail Whip",
+				"description": "Can be used to knock back adversaries.",
+				"level": 10
+			}
+		],
+		"inventory": [
+			{
+				"name": "claws",
+				"description": "Sharp Claws to slice you with",
+				"quantity": 1
+			},
+			{
+				"name": "Hidden Treasures",
+				"description": "Limitless riches that the dragon guards",
+				"quantity": 5
+			}
+		]
+	},
+	{
+		"name": "Prince",
+		"items_lost": [],
+		"items_gained": [],
+		"damage_taken": 0,
+		"stats": {
+			"CHR": 5,
+			"CON": 3,
+			"DEX": 2,
+			"INT": 4,
+			"STR": 5,
+			"WIS": 3,
+			"LUK": 1,
+			"HP": 15
+		},
+		"skills": [
+			{
+				"name": "Leadership",
+				"description": "Can lead followers.",
+				"level": 5
+			},
+			{
+				"name": "Sleek Swordsmanship",
+				"description": "Fast sword skills make Prince a deadly foe at close ranges.",
+				"level": 8
+			}
+		],
+		"inventory": [
+			{
+				"name": "Trusty Longsword",
+				"description": "A fine sword of steel and iron",
+				"quantity": 1
+			}
+		]
+	},
+	{
+		"name": "Minea Marius",
+		"items_lost": [],
+		"items_gained": [],
+		"damage_taken": 0,
+		"stats": {
+			"CHR": 2,
+			"CON": 3,
+			"DEX": 2,
+			"INT": 40,
+			"STR": 1,
+			"WIS": 30,
+			"LUK": 1,
+			"HP": 10
+		},
+		"skills": [
+			{
+				"name": "Outsmarting",
+				"description": "Will outsmart almost any situation due to his knowledge of algorithms",
+				"level": 10
+			}
+		],
+		"inventory": [
+			{
+				"name": "High Tech Algorithms Textbook",
+				"description": "The futuristic secrets of computation",
+				"quantity": 2
+			},
+			{
+				"name": "computer",
+				"description": "A Dell laptop from 2050.",
+				"quantity": 1
+			}
+		]
+	},
+]`
