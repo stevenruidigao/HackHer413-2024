@@ -223,7 +223,32 @@ func main() {
 
 				var resp *genai.GenerateContentResponse
 
-				resp, err = cs.SendMessage(ctx, genai.Text(GENERATE_NPCS_PROMPT))
+				cs.History = []*genai.Content{
+					&genai.Content{
+						Parts: []genai.Part{
+							genai.Text(PROMPT_POSTFIX),
+						},
+						Role: "user",
+					},
+					&genai.Content{
+						Parts: []genai.Part{
+							genai.Text(GENERATE_NPCS_PROMPT),
+						},
+						Role: "model",
+					},
+				}
+
+				gameStateJSON, err := json.Marshal(chat.GameState)
+
+				if err != nil {
+					log.Fatal("Error marshalling input to JSON:", err)
+				}
+
+				resp, err = cs.SendMessage(ctx, genai.Text(gameStateJSON))
+
+				if err != nil {
+					log.Fatal(err)
+				}
 
 				var text string = ""
 				NPCs := []NPC{}
