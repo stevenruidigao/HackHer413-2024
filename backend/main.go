@@ -29,6 +29,7 @@ type PotentialAction struct {
 type Item struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Quantity    int    `json:"quantity"`
 }
 
 type Skill struct {
