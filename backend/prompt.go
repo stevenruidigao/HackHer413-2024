@@ -389,7 +389,7 @@ Example of a response you can give (in JSON):
 		]
 	},
 	{
-		"name": "Prince",
+		"name": "Stormtrooper",
 		"items_lost": [],
 		"items_gained": [],
 		"damage_taken": 0,
@@ -405,20 +405,20 @@ Example of a response you can give (in JSON):
 		},
 		"skills": [
 			{
-				"name": "Leadership",
-				"description": "Can lead followers.",
+				"name": "Follow Orders",
+				"description": "Can follow orders to the letter.",
 				"level": 5
 			},
 			{
-				"name": "Sleek Swordsmanship",
-				"description": "Fast sword skills make Prince a deadly foe at close ranges.",
+				"name": "Blast 'em",
+				"description": "Fast laser gun shots deal damage to far away targets.",
 				"level": 8
 			}
 		],
 		"inventory": [
 			{
-				"name": "Trusty Longsword",
-				"description": "A fine sword of steel and iron",
+				"name": "Blaster",
+				"description": "Military grade laser gun.",
 				"quantity": 1
 			}
 		]
