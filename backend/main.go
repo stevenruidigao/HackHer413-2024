@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -158,10 +159,14 @@ func main() {
 							Name:      requestData.Name,
 							Inventory: []Item{},
 							Stats: map[string]int{
-								"HP":  10,
+								"CHR": 1,
+								"CON": 1,
+								"DEX": 1,
 								"INT": 1,
-								"LUK": 1,
 								"STR": 1,
+								"WIS": 1,
+								"LUK": 1,
+								"HP":  10,
 							},
 							Skills: []Skill{},
 						},
@@ -225,36 +230,54 @@ func main() {
 		log.Println("Input JSON:", string(inputJSON))
 
 		cs := model.StartChat()
-		cs.History = chat.History
 
-		resp, err := cs.SendMessage(ctx, genai.Text(inputJSON))
+		var text string
+		var AIResp OutcomeOutput
 
-		if err != nil {
-			log.Fatal("Error sending message:", err)
-		}
+		for i := 0; i < 3; i++ {
+			var err error = nil
 
-		if err != nil {
-			log.Fatal(err)
-		}
+			cs.History = chat.History
+			resp, err := cs.SendMessage(ctx, genai.Text(inputJSON))
 
-		text, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
+			if err != nil {
+				log.Println("Error sending message:", err)
+			}
 
-		if !ok {
-			log.Fatal("The response was not a text response.")
-		}
+			for j := 0; j < len(resp.Candidates); j++ {
+				text = ""
 
-		log.Println(text)
+				for i := 0; i < len(resp.Candidates[0].Content.Parts); i++ {
+					part, ok := resp.Candidates[0].Content.Parts[i].(genai.Text)
 
-		AIResp := OutcomeOutput{}
+					if !ok {
+						log.Println("The response was not a text response.")
+						err = errors.New("The response was not a text response.")
+						continue
+					}
 
-		err = json.Unmarshal([]byte(text), &AIResp)
+					text = strings.Join([]string{text, string(part)}, "")
+				}
 
-		if err != nil {
-			log.Fatal(err)
+				log.Println(text)
+				err = json.Unmarshal([]byte(text), &AIResp)
+
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+
+				break
+			}
+
+			if err != nil {
+				continue
+			}
+
+			break
 		}
 
 		chat.GameState.Scenario = AIResp.Scenario
-
 		chat.GameState.GameStatePublic.Player.Character.Stats["HP"] -= AIResp.Player.DamageTaken
 
 		for i := 0; i < len(AIResp.Player.ItemsGained); i++ {
