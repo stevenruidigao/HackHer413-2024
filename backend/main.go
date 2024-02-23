@@ -450,7 +450,7 @@ func main() {
 					}
 
 					for k := 0; k < len(AIResp.NPCs[i].ItemsGained); k++ {
-						chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = append(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory, AIResp.NPCs[k].ItemsGained[k])
+						chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = append(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory, AIResp.NPCs[i].ItemsGained[k])
 					}
 
 					for k := 0; k < len(AIResp.NPCs[i].ItemsLost); k++ {
