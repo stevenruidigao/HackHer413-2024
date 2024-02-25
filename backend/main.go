@@ -41,6 +41,7 @@ type Skill struct {
 
 type Character struct {
 	Name      string         `json:"name,omitempty"`
+	Description string `json:"description"`
 	Inventory []Item         `json:"inventory"`
 	Stats     map[string]int `json:"stats"`
 	Skills    []Skill        `json:"skills"`
@@ -52,7 +53,7 @@ type Player struct {
 
 type NPC struct {
 	Character
-	Description string `json:"description"`
+//	Description string `json:"description"`
 }
 
 type GameStatePublic struct {
@@ -69,6 +70,7 @@ type GameState struct {
 
 type OutputCharacter struct {
 	Name        string `json:"name"`
+	Description string `json:"description"`
 	ItemsLost   []Item `json:"items_lost"`
 	ItemsGained []Item `json:"items_gained"`
 	DamageTaken int    `json:"damage_taken"`
@@ -121,7 +123,7 @@ func main() {
 	client, err := genai.NewClient(ctx, option.WithAPIKey(geminiAPIKey))
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	defer client.Close()
@@ -180,7 +182,7 @@ func main() {
 			Item{Name: "Black Cleaver", Description: "A dark and sinister blade, used for murder.", Quantity: 1},
 			Item{Name: "Vangaurd's Shield", Description: "A powerful shield meant to protect.", Quantity: 1},
 			Item{Name: "Freeze Ray", Description: "Raygun which is good for immobilizing.", Quantity: 1},
-			Item{Name: "Golden Apples", Description: "Mystical Fruit that increase your strength and defense.", Quantity: 3},
+			Item{Name: "Golden Apples", Description: "Mystical fruit that increase your strength and defense.", Quantity: 3},
 			Item{Name: "Stick", Description: "Just a stick. For good luck.", Quantity: 1},
 			Item{Name: "Hypnoshroom", Description: "A special mushroom used to hypnotize an enemy. Consumed on use.", Quantity: 1},
 			Item{Name: "Rocket Launcher", Description: "A great weapon for taking out multiple targets, but slow to shoot.", Quantity: 1},
@@ -227,7 +229,7 @@ func main() {
 			log.Println(genai.Text(string(jsonAction) + "\n\n" + PROMPT_POSTFIX))
 
 			if err != nil {
-				log.Fatal("Error marshalling action to JSON:", err)
+				log.Println("Error marshalling action to JSON:", err)
 			}
 
 			chat := Chat{
@@ -283,13 +285,15 @@ func main() {
 				gameStateJSON, err := json.Marshal(chat.GameState)
 
 				if err != nil {
-					log.Fatal("Error marshalling input to JSON:", err)
+					log.Println("Error marshalling input to JSON:", err)
+					return
 				}
 
 				resp, err = cs.SendMessage(ctx, genai.Text(gameStateJSON))
 
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
+					return
 				}
 
 				var text string = ""
@@ -355,7 +359,7 @@ func main() {
 		inputJSON, err := json.Marshal(action)
 
 		if err != nil {
-			log.Fatal("Error marshalling input to JSON:", err)
+			log.Println("Error marshalling input to JSON:", err)
 		}
 
 		log.Println("Input JSON:", string(inputJSON))
@@ -414,6 +418,8 @@ func main() {
 
 		chat.GameState.Scenario = AIResp.Scenario
 		chat.GameState.GameStatePublic.IsOver = AIResp.IsOver
+		chat.GameState.GameStatePublic.Player.Character.Name = AIResp.Player.Name
+		chat.GameState.GameStatePublic.Player.Character.Description = AIResp.Player.Description
 		chat.GameState.GameStatePublic.Player.Character.Stats["HP"] -= AIResp.Player.DamageTaken
 
 		if chat.GameState.GameStatePublic.Player.Character.Stats["HP"] <= 0 {
@@ -450,7 +456,7 @@ func main() {
 					}
 
 					for k := 0; k < len(AIResp.NPCs[i].ItemsGained); k++ {
-						chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = append(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory, AIResp.NPCs[k].ItemsGained[k])
+						chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = append(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory, AIResp.NPCs[i].ItemsGained[k])
 					}
 
 					for k := 0; k < len(AIResp.NPCs[i].ItemsLost); k++ {
