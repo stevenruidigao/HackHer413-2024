@@ -7,13 +7,13 @@ export default function Stat(props) {
 
   return (
     <div className="stats">
-      <div className="stat-title-container"><h1 className = "stat-title">STAT</h1></div>
+      <div className="stat-title-container"><h2 className = "stat-title">STAT</h2></div>
       <div className = "stat-container">
         {Object.keys(stats).map((stat) => {
           return (<Item name = {`${stat}: Lv. ${stats[stat]}`} title = {stats[stat]}/>);
         })}
       </div>
-      <div className="skill-title-container"><h1 className = "skill-title">SKILL</h1></div>
+      <div className="skill-title-container"><h2 className = "skill-title">SKILL</h2></div>
       <div className = "skill-container">
         {skills.map((skill) => {
           return (<Item name = {skill.name} title = {skill.description}/>);

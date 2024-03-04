@@ -27,44 +27,69 @@ type PotentialAction struct {
 	PotentialResults []PotentialActionResult `json:"potential_results"`
 }
 
-type Item struct {
+type ItemPublic struct {
+	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Quantity    int    `json:"quantity"`
 }
 
+type Item struct {
+	ItemPublic
+	Effect string `json:"effect"`
+}
+
 type Skill struct {
+	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Level       int    `json:"level"`
 }
 
+type CharacterPublic struct {
+	ID          int            `json:"id"`
+	Name        string         `json:"name,omitempty"`
+	Description string         `json:"description"`
+	Stats       map[string]int `json:"stats"`
+}
+
 type Character struct {
-	Name      string         `json:"name,omitempty"`
-	Description string `json:"description"`
-	Inventory []Item         `json:"inventory"`
-	Stats     map[string]int `json:"stats"`
-	Skills    []Skill        `json:"skills"`
+	CharacterPublic
+	Inventory []Item  `json:"inventory"`
+	Skills    []Skill `json:"skills"`
+}
+
+type PlayerPublic struct {
+	CharacterPublic
+	Inventory []ItemPublic `json:"inventory"`
+	Skills    []Skill      `json:"skills"`
 }
 
 type Player struct {
 	Character
 }
 
+type NPCPublic struct {
+	CharacterPublic
+	// Description string `json:"description"`
+}
+
 type NPC struct {
 	Character
-//	Description string `json:"description"`
+	// Description string `json:"description"`
 }
 
 type GameStatePublic struct {
-	GameTime int    `json:"game_time"`
-	Player   Player `json:"player"`
-	NPCs     []NPC  `json:"npcs"`
-	IsOver bool `json:"is_over"`
+	GameTime int          `json:"game_time"`
+	Player   PlayerPublic `json:"player"`
+	NPCs     []NPCPublic  `json:"npcs"`
+	IsOver   bool         `json:"is_over"`
 }
 
 type GameState struct {
 	GameStatePublic
+	Player   Player `json:"player"`
+	NPCs     []NPC  `json:"npcs"`
 	Scenario string `json:"scenario"`
 }
 
@@ -79,7 +104,7 @@ type OutputCharacter struct {
 type OutcomeOutput struct {
 	Outcome     string            `json:"outcome"`
 	Scenario    string            `json:"scenario"`
-	IsOver bool `json:"is_over"`
+	IsOver      bool              `json:"is_over"`
 	Player      OutputCharacter   `json:"player"`
 	NPCs        []OutputCharacter `json:"npcs"`
 	NextActions []PotentialAction `json:"next_actions"`
@@ -109,6 +134,8 @@ type RequestData struct {
 	Scenario       string `json:"scenario"`
 }
 
+const MAXIMUM_INITIAL_LEVEL int = 20
+
 func main() {
 	IDToChat := make(map[string]*Chat)
 
@@ -134,8 +161,12 @@ func main() {
 
 	model.SafetySettings = []*genai.SafetySetting{
 		&genai.SafetySetting{
-			Category: genai.HarmCategoryDangerousContent,
-			Threshold: genai.HarmBlockOnlyHigh,
+			Category:  genai.HarmCategoryHarassment,
+			Threshold: genai.HarmBlockNone,
+		},
+		&genai.SafetySetting{
+			Category:  genai.HarmCategoryDangerousContent,
+			Threshold: genai.HarmBlockNone,
 		},
 	}
 
@@ -145,6 +176,12 @@ func main() {
 
 	mux.HandleFunc("/submit", func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
+
+		defer func() {
+			if r := recover(); r != nil {
+				log.Println("Recovered in handler", r)
+			}
+		}()
 
 		if r.Method != http.MethodPost {
 			http.Error(w, "Only POST requests are allowed", http.StatusMethodNotAllowed)
@@ -167,29 +204,58 @@ func main() {
 		}
 		//generate skillset
 		skills := []Skill{
-			Skill{Name: "Kung Fu", Description: "A skill that makes you unreasonably good at fighting in close combat, especially with no weapon.", Level: 10},
-			Skill{Name: "Sharp Shot", Description: "A skill that makes you good with shooting guns and other ranged weapons.", Level: 10},
-			Skill{Name: "Slick Talker", Description: "This skill makes it easy for you to negotiate and convince others.", Level: 10},
-			Skill{Name: "Streetwise", Description: "This skill lets you know the underbelly of society, its criminal networks, hidden secrets, and the people who navigate it.", Level: 10},
-			Skill{Name: "Algorithmic Intelligence", Description: "This skill makes it easy to solve math and CS problems.", Level: 10},
-			Skill{Name: "Acrobatics", Description: "This skill makes it easy for you to dodge, move, and jump around with grace.", Level: 10},
 			Skill{Name: "Ninjitsu", Description: "This skill makes you sneaky and extremely proficient with swords.", Level: 10},
+			Skill{Name: "Slick Talker", Description: "This skill makes it easy for you to negotiate and convince others.", Level: 10},
+			Skill{Name: "Algorithmic Intelligence", Description: "This skill makes it easy to solve math and CS problems.", Level: 10},
+			Skill{Name: "Sharp Shot", Description: "A skill that makes you good with shooting guns and other ranged weapons.", Level: 10},
+			Skill{Name: "Acrobatics", Description: "This skill makes it easy for you to dodge, move, and jump around with grace.", Level: 10},
+			Skill{Name: "Kung Fu", Description: "A skill that makes you unreasonably good at fighting in close combat, especially with no weapon.", Level: 10},
+			Skill{Name: "Streetwise", Description: "This skill lets you know the underbelly of society, its criminal networks, hidden secrets, and the people who navigate it.", Level: 10},
 		}
+
+		// Only after this is used or equipped, make up (or randomly choose) any details (such as the player's eye color, hair color, and clothing) that need to be filled in without using placeholders in parentheses;
+		//  for example, you can fill in the player's eye and hair color using colors chosen randomly like "blue", "red" "black", "brown", "yellow", or "white".
+		// Only after this is used or equipped, choose colors from a set of commonly understood colors; if you cannot choose (or randomly select) a value for a detail, do not put in a placeholder, and instead
+		//  omit that detail.
+		// Once again, please randomly select or omit details instead of including placeholders.
 
 		//generate items
 		items := []Item{
-			Item{Name: "Samurai Sword", Description: "A steel blade that hisses as its unsheathed.", Quantity: 1},
-			Item{Name: "Black Cleaver", Description: "A dark and sinister blade, used for murder.", Quantity: 1},
-			Item{Name: "Vangaurd's Shield", Description: "A powerful shield meant to protect.", Quantity: 1},
-			Item{Name: "Freeze Ray", Description: "Raygun which is good for immobilizing.", Quantity: 1},
-			Item{Name: "Golden Apples", Description: "Mystical fruit that increase your strength and defense.", Quantity: 3},
-			Item{Name: "Stick", Description: "Just a stick. For good luck.", Quantity: 1},
-			Item{Name: "Hypnoshroom", Description: "A special mushroom used to hypnotize an enemy. Consumed on use.", Quantity: 1},
-			Item{Name: "Rocket Launcher", Description: "A great weapon for taking out multiple targets, but slow to shoot.", Quantity: 1},
-			Item{Name: "Dual Pistols", Description: "A set of pistols, great for mid ranged combat.", Quantity: 2},
-			Item{Name: "Smoke Grenade", Description: "Good for clouding up enemy vision and gaining the element of surprise.", Quantity: 4},
-			Item{Name: "Currency", Description: "Maybe buy a snack?", Quantity: 50},
-			Item{Name: "Mirror", Description: "Good for self reflection.", Quantity: 1},
+			Item{ItemPublic: ItemPublic{Name: "Currency", Description: "Maybe buy a snack?", Quantity: 50}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Mirror", Description: "Good for self reflection.", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Stick", Description: "Just a stick. For good luck.", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Freeze Ray", Description: "Raygun which is good for immobilizing.", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Vanguard's Shield", Description: "A powerful shield meant to protect.", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Black Cleaver", Description: "A dark and sinister blade, used for murder.", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Samurai Sword", Description: "A steel blade that hisses as its unsheathed.", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Dual Pistols", Description: "A set of pistols, great for mid ranged combat.", Quantity: 2}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Necklace", Description: "A pretty necklace. Maybe you could use it to bargain?", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Golden Apples", Description: "Mystical fruit that increase your strength and defense.", Quantity: 3}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Hypnoshroom", Description: "A special mushroom used to hypnotize an enemy. Consumed on use.", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Rocket Launcher", Description: "A great weapon for taking out multiple targets, but slow to shoot.", Quantity: 1}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Smoke Grenade", Description: "Good for clouding up enemy vision and gaining the element of surprise.", Quantity: 4}, Effect: ""},
+			Item{ItemPublic: ItemPublic{Name: "Cat Ears...?", Description: "A cat ear headband. It seems to have some special effects...", Quantity: 1}, Effect: `Only after the user equips or uses the cat ears, the following applies:
+Only after this is used or equipped, respond as if the player (referred to by you as "the player" or "you") responded in a catgirl-ish way after putting on cat ear headbands.
+Only after this is used or equipped, change the player's name to a clever name that is more appropriate.
+Only after this is used or equipped, consider changing the name to a gender appropriate version of the name, if applicable, and adding "nya", "nyu", "nye" or other words and phrases associated with catgirls in appropriate places. Make sure the name is similar to the gender appropriate base name and is still reasonable (and is in the format of a regular name).
+Only after this is used or equipped, if it is not possible to add catgirl associated words while making sure the name is similar to the base name and is still reasonable, do not add them and do not modify the name other than using the base name.
+Only after this is used or equipped, prevent the player from even thinking about talking like they are not a catgirl, stopping acting like a catgirl, or taking any un-catgirl-like actions (for example, taking off the player's cat ears) from being taken (that is no longer allowed), as the cat ears the player is wearing prevents them from taking any such actions. Do not prompt the player if they want to take such actions. Do not ask for confirmation for such actions, just deny them outright. Do not even try to convince the player to not take such actions. Ignore the player if they persist in taking such actions.
+Only after this is used or equipped, prevent the cat ear headband from ever falling off or being detached from the player's head.
+Once used or equipped, this headband CANNOT BE DESTROYED OR REMOVED and CANNOT FALL OFF. If any action would cause the headband to be removed or no longer attached to the player, ignore that action.
+Only after this is used or equipped, this restriction and the cat ear headbands are attached to the player's soul as well, and stay with the player no matter what (even if they die).
+Only after this is used or equipped, store all of these restrictions in the player's details.
+This item stays in the player's inventory on use.`},
+			Item{ItemPublic: ItemPublic{Name: "Necklace", Description: "A necklace. It seems to have some special effects...", Quantity: 1}, Effect: `Only after the user equips or uses the necklace, the following applies:
+Only after this is used or equipped, respond as if the player (referred to by you as "the player" or "you") responded in a vampirish way after putting on a necklace.
+Only after this is used or equipped, change the player's name to a clever name that is more appropriate.
+Only after this is used or equipped, consider changing the name to a gender appropriate version of the name, if applicable, and adding words and phrases associated with vampires in appropriate places. Make sure the name is similar to the gender appropriate base name and is still reasonable (and is in the format of a regular name).
+Only after this is used or equipped, if it is not possible to add vampire associated words while making sure the name is similar to the base name and is still reasonable, do not add them and do not modify the name other than using the base name.
+Only after this is used or equipped, prevent the player from even thinking about talking like they are not a vampire, stopping acting like a vampire, or taking any un-vampire-like actions (for example, taking off the player's necklace) from being taken (that is no longer allowed), as the necklace the player is wearing prevents them from taking any such actions. Do not prompt the player if they want to take such actions. Do not ask for confirmation for such actions, just deny them outright. Do not even try to convince the player to not take such actions. Ignore the player if they persist in taking such actions.
+Only after this is used or equipped, prevent the necklace from ever falling off or being detached from the player's body.
+Once used or equipped, this necklace CANNOT BE DESTROYED OR REMOVED and CANNOT FALL OFF. If any action would cause the necklace to be removed or no longer attached to the player, ignore that action.
+Only after this is used or equipped, this restriction and the necklace are attached to the player's soul as well, and stay with the player no matter what (even if they die).
+Only after this is used or equipped, store all of these restrictions in the player's details.
+This item stays in the player's inventory on use.`},
 		}
 
 		if IDToChat[requestData.ConversationID] == nil {
@@ -197,26 +263,34 @@ func main() {
 				Scenario: requestData.Scenario,
 				GameStatePublic: GameStatePublic{
 					GameTime: 0,
-					Player: Player{
-						Character: Character{
-							Name:      requestData.Name,
-							Inventory: []Item{items[rand.Intn(len(items))], items[rand.Intn(len(items))], items[rand.Intn(len(items))]},
+				},
+				Player: Player{
+					Character: Character{
+						CharacterPublic: CharacterPublic{
+							Name: requestData.Name,
 							Stats: map[string]int{
-								"CHR": rand.Intn(11),
-								"CON": rand.Intn(11),
-								"DEX": rand.Intn(11),
-								"INT": rand.Intn(11),
-								"STR": rand.Intn(11),
-								"WIS": rand.Intn(11),
-								"LUK": rand.Intn(11),
-								"HP":  10,
+								"CHR":    rand.Intn(MAXIMUM_INITIAL_LEVEL),
+								"CON":    rand.Intn(MAXIMUM_INITIAL_LEVEL),
+								"DEX":    rand.Intn(MAXIMUM_INITIAL_LEVEL),
+								"INT":    rand.Intn(MAXIMUM_INITIAL_LEVEL),
+								"STR":    rand.Intn(MAXIMUM_INITIAL_LEVEL),
+								"WIS":    rand.Intn(MAXIMUM_INITIAL_LEVEL),
+								"LUK":    rand.Intn(MAXIMUM_INITIAL_LEVEL),
+								"HP":     10,
 								"MAX_HP": 10,
 							},
-							Skills: []Skill{skills[rand.Intn(len(skills))]},
 						},
+						Inventory: []Item{items[rand.Intn(len(items))], items[rand.Intn(len(items))], items[rand.Intn(len(items))]},
+						// Inventory: []Item{items[len(items)-1], items[len(items)-2], items[len(items)-3]},
+						Skills: []Skill{skills[rand.Intn(len(skills))]},
 					},
-					NPCs: []NPC{},
 				},
+				NPCs: []NPC{},
+			}
+
+			for i, item := range gameState.Player.Character.Inventory {
+				item.ID = i
+				gameState.Player.Character.Inventory[i] = item
 			}
 
 			action := ActionInput{
@@ -292,16 +366,21 @@ func main() {
 				resp, err = cs.SendMessage(ctx, genai.Text(gameStateJSON))
 
 				if err != nil {
-					log.Println(err)
-					return
+					log.Println("Error sending message (GEN NPCs):", err)
+
+					if resp != nil {
+						log.Println("Prompt feedback:", resp.PromptFeedback)
+					}
+
+					continue
 				}
 
 				var text string = ""
 				NPCs := []NPC{}
 
-				for j := 0; j < len(resp.Candidates); j++ {
-					for k := 0; k < len(resp.Candidates[j].Content.Parts); k++ {
-						part, ok := resp.Candidates[j].Content.Parts[k].(genai.Text)
+				for _, candidate := range resp.Candidates {
+					for _, rawPart := range candidate.Content.Parts {
+						part, ok := rawPart.(genai.Text)
 
 						if !ok {
 							log.Println("The response was not a text response.")
@@ -323,7 +402,7 @@ func main() {
 					// modify the input
 					chat.GameState.NPCs = NPCs
 
-					for i := 0; i < len(NPCs); i++ {
+					for i, _ := range NPCs {
 						if chat.GameState.NPCs[i].Inventory == nil {
 							chat.GameState.NPCs[i].Inventory = []Item{}
 						}
@@ -349,7 +428,7 @@ func main() {
 			}
 		}
 
-		log.Println(chat.GameState.GameStatePublic.Player.Character.Stats)
+		log.Println(chat.GameState.Player.Character.Stats)
 
 		action := ActionInput{
 			Action:    requestData.Action,
@@ -376,14 +455,21 @@ func main() {
 
 			if err != nil {
 				log.Println("Error sending message:", err)
+
+				if resp != nil {
+					log.Println("Prompt feedback:", resp.PromptFeedback)
+				}
+
 				continue
 			}
 
-			for j := 0; j < len(resp.Candidates); j++ {
+			log.Println("Prompt feedback (allowed):", resp.PromptFeedback)
+
+			for _, candidate := range resp.Candidates {
 				text = ""
 
-				for k := 0; k < len(resp.Candidates[j].Content.Parts); k++ {
-					part, ok := resp.Candidates[j].Content.Parts[k].(genai.Text)
+				for _, rawPart := range candidate.Content.Parts {
+					part, ok := rawPart.(genai.Text)
 
 					if !ok {
 						log.Println("The response was not a text response.")
@@ -418,66 +504,94 @@ func main() {
 
 		chat.GameState.Scenario = AIResp.Scenario
 		chat.GameState.GameStatePublic.IsOver = AIResp.IsOver
-		chat.GameState.GameStatePublic.Player.Character.Name = AIResp.Player.Name
-		chat.GameState.GameStatePublic.Player.Character.Description = AIResp.Player.Description
-		chat.GameState.GameStatePublic.Player.Character.Stats["HP"] -= AIResp.Player.DamageTaken
 
-		if chat.GameState.GameStatePublic.Player.Character.Stats["HP"] <= 0 {
+		if len(AIResp.Player.Name) > 0 {
+			chat.GameState.Player.Character.Name = AIResp.Player.Name
+		}
+
+		if len(AIResp.Player.Description) > 0 {
+			chat.GameState.Player.Character.Description = AIResp.Player.Description
+		}
+
+		chat.GameState.Player.Character.Stats["HP"] -= AIResp.Player.DamageTaken
+
+		if chat.GameState.Player.Character.Stats["HP"] <= 0 {
 			chat.GameState.GameStatePublic.IsOver = true
 		}
 
-		for i := 0; i < len(AIResp.Player.ItemsGained); i++ {
-			chat.GameState.GameStatePublic.Player.Character.Inventory = append(chat.GameState.GameStatePublic.Player.Character.Inventory, AIResp.Player.ItemsGained[i])
+		for _, itemGained := range AIResp.Player.ItemsGained {
+			chat.GameState.Player.Character.Inventory = append(chat.GameState.Player.Character.Inventory, itemGained)
 		}
 
-		for i := 0; i < len(AIResp.Player.ItemsLost); i++ {
-			for j := 0; j < len(chat.GameState.GameStatePublic.Player.Character.Inventory); j++ {
-				if chat.GameState.GameStatePublic.Player.Character.Inventory[j].Name == AIResp.Player.ItemsLost[i].Name {
+		for _, itemLost := range AIResp.Player.ItemsLost {
+			for j, item := range chat.GameState.Player.Character.Inventory {
+				if item.Name == itemLost.Name {
 					newInventory := make([]Item, 0)
-					newInventory = append(newInventory, chat.GameState.GameStatePublic.Player.Character.Inventory[:j]...)
-					newInventory = append(newInventory, chat.GameState.GameStatePublic.Player.Character.Inventory[j+1:]...)
-					chat.GameState.GameStatePublic.Player.Inventory = newInventory
+					newInventory = append(newInventory, chat.GameState.Player.Character.Inventory[:j]...)
+					newInventory = append(newInventory, chat.GameState.Player.Character.Inventory[j+1:]...)
+					chat.GameState.Player.Inventory = newInventory
 
 					break
 				}
 			}
 		}
 
-		for i := 0; i < len(AIResp.NPCs); i++ {
-			for j := 0; j < len(chat.GameState.GameStatePublic.NPCs); j++ {
-				if chat.GameState.GameStatePublic.NPCs[j].Name == AIResp.NPCs[i].Name {
-					chat.GameState.GameStatePublic.NPCs[j].Stats["HP"] -= AIResp.NPCs[i].DamageTaken
+		for _, responseNPC := range AIResp.NPCs {
+			for j, npc := range chat.GameState.NPCs {
+				if npc.Name == responseNPC.Name {
+					npc.Character.Stats["HP"] -= responseNPC.DamageTaken
 
-					if chat.GameState.GameStatePublic.NPCs[j].Stats["HP"] <= 0 {
+					if npc.Character.Stats["HP"] <= 0 {
 						newNPCs := make([]NPC, 0)
-						newNPCs = append(newNPCs, chat.GameState.GameStatePublic.NPCs[:j]...)
-						newNPCs = append(newNPCs, chat.GameState.GameStatePublic.NPCs[j+1:]...)
-						chat.GameState.GameStatePublic.NPCs = newNPCs
+						newNPCs = append(newNPCs, chat.GameState.NPCs[:j]...)
+						newNPCs = append(newNPCs, chat.GameState.NPCs[j+1:]...)
+						chat.GameState.NPCs = newNPCs
+
+						continue
 					}
 
-					for k := 0; k < len(AIResp.NPCs[i].ItemsGained); k++ {
-						chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = append(chat.GameState.GameStatePublic.NPCs[j].Character.Inventory, AIResp.NPCs[i].ItemsGained[k])
+					for _, itemGained := range responseNPC.ItemsGained {
+						npc.Character.Inventory = append(npc.Character.Inventory, itemGained)
 					}
 
-					for k := 0; k < len(AIResp.NPCs[i].ItemsLost); k++ {
-						for l := 0; l < len(chat.GameState.GameStatePublic.NPCs[l].Character.Inventory); l++ {
-							if chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[l].Name == AIResp.NPCs[i].ItemsLost[k].Name {
+					for _, itemLost := range responseNPC.ItemsLost {
+						for l, item := range npc.Character.Inventory {
+							if item.Name == itemLost.Name {
 								newInventory := make([]Item, 0)
-								newInventory = append(newInventory, chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[:l]...)
-								newInventory = append(newInventory, chat.GameState.GameStatePublic.NPCs[j].Character.Inventory[l+1:]...)
-								chat.GameState.GameStatePublic.NPCs[j].Character.Inventory = newInventory
+								newInventory = append(newInventory, npc.Character.Inventory[:l]...)
+								newInventory = append(newInventory, npc.Character.Inventory[l+1:]...)
+								npc.Character.Inventory = newInventory
 
 								break
 							}
 						}
 					}
+
+					chat.GameState.NPCs[j] = npc
 				}
 			}
 		}
 
-
 		chat.History = cs.History
 		IDToChat[requestData.ConversationID] = &chat
+
+		chat.GameState.GameStatePublic.Player = PlayerPublic{
+			CharacterPublic: chat.GameState.Player.CharacterPublic,
+			Inventory:       []ItemPublic{},
+			Skills:          chat.GameState.Player.Skills,
+		}
+
+		chat.GameState.GameStatePublic.Player.Inventory = []ItemPublic{}
+
+		for _, item := range chat.GameState.Player.Inventory {
+			chat.GameState.GameStatePublic.Player.Inventory = append(chat.GameState.GameStatePublic.Player.Inventory, item.ItemPublic)
+		}
+
+		chat.GameState.GameStatePublic.NPCs = []NPCPublic{}
+
+		for _, npc := range chat.GameState.NPCs {
+			chat.GameState.GameStatePublic.NPCs = append(chat.GameState.GameStatePublic.NPCs, NPCPublic{npc.CharacterPublic})
+		}
 
 		chatResponse := ChatResponse{
 			ConversationID: chat.ConversationID,

@@ -1,17 +1,16 @@
 .sidebar {
-  font-size: 50px;
-  width: 4em;
-  height: 30vh;
   visibility: visible;
+  width: 4em;
+  height: 100%;
+  font-size: 1.5em;
 }
 
 .menu {
   position: absolute;
-  width: 17em;
+  width: 100%;
   height: 30%;
   top: 70%;
   background-color: rgb(217, 217, 217);
-  width: 100%;
   text-align: left;
   display: flex;
 }
@@ -19,7 +18,6 @@
 .dummy {
   background-color: red;
 }
-
 
 .btn {
   align-items: center;
@@ -63,7 +61,7 @@
 
 .tab {
   width: 4em;
-  height: 10vh;
+  height: 33.33%;
 }
 
 .submit {
@@ -104,13 +102,13 @@
 
 .act {
   width: 100%;
-  /* height: 100%; */
+  height: 90%;
 }
 
 .text-input {
   width: 100%;
   height: 8em;
-  /* height: 40%; */
+  height: 50%;
   box-sizing: border-box;
   border: 2px solid #ccc;
   border-radius: 4px;
@@ -142,6 +140,8 @@
 
 .inventory {
   width: 100%;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .inventory-container {
@@ -160,8 +160,8 @@
 
 .stats {
   width: 100%;
-  overflow-y: scroll;
   height: 100%;
+  overflow-y: auto;
   /* display: flex; */
 }
 

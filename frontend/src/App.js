@@ -40,7 +40,7 @@ function App() {
 
     console.log("SENDING THE USER INPUT UWUW: "+userAction)
     console.log("into the conversation: "+conversation_id)
-    let url = "http://localhost:8080/submit";
+    let url = "/submit";
     const response = fetch(url, {
       method: "POST", // *GET, POST, PUT, DELETE, etc.
       headers: {
@@ -73,10 +73,16 @@ function App() {
       document.getElementById("loading").className = "hidden";
     });
   }
-  
-  window.onload = () => {
+
+  window.loadAIdventure = () => {
+    if (window.loadedAIdventure) return;
+
+    window.loadedAIdventure = true;
     send(convId, "Assess the situation in full.", "Player", scenarios[Math.floor(Math.random()*scenarios.length)])
   }
+
+  setTimeout(window.loadAIdventure, 0);
+  window.addEventListener("load", window.loadAIdventure);
 
   return (
     <div className="App">
