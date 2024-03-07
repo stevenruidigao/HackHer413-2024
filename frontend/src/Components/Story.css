@@ -40,3 +40,8 @@
     top:70vh;
     transform: translate(0%, -100%);
 }
+
+#turns {
+    max-height: 50vh;
+    overflow-y: auto;
+}

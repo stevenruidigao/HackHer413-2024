@@ -12,6 +12,7 @@
     display: flex;
     flex-direction: column;
 }
+
 .entity-left {
     position: absolute;
     top: 20vh;
@@ -42,16 +43,19 @@ progress[value] {
     margin: 0 10px;
     border-radius: 10em;
     background: var(--background);
-  }
-  progress[value]::-webkit-progress-bar {
+}
+
+progress[value]::-webkit-progress-bar {
     border-radius: 10em;
     background: var(--background);
-  }
-  progress[value]::-webkit-progress-value {
+}
+
+progress[value]::-webkit-progress-value {
     border-radius: 10em;
     background: var(--color);
-  }
-  progress[value]::-moz-progress-bar {
+}
+
+progress[value]::-moz-progress-bar {
     border-radius: 10em;
     background: var(--color);
-  }
+}
