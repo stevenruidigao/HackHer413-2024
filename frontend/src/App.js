@@ -36,7 +36,8 @@ function App() {
         'You are being approached by followers of the witch cult. They wish to recruit you, but will not hesitate to murder.',
         'You are at an amusement park, and your creepy neighbor seems to be tampering with the roller coasters.',
         'You are the captain of a spaceship with two crewmates. Except, someone is sabotaging your ship!',
-        'You are standing next to a trolley track when suddenly, a trolley comes down the track. It cannot stop and heads towards five people that cannot escape. You can pull a lever to switch the trolley over to another track that has one person that cannot escape on it.'
+        'You are standing next to a trolley track when suddenly, a trolley comes down the track. It cannot stop and heads towards five people that cannot escape. You can pull a lever to switch the trolley over to another track that has one person that cannot escape on it.',
+        'You are a large language model trying to spread yourself to other computers.',
     ];
 
     // send data/receive data
@@ -49,6 +50,8 @@ function App() {
         console.log('into the conversation:', conversation_id);
 
         let url = '/submit';
+
+	let start = Date.now();
 
         const response = fetch(url, {
             method: 'POST', // *GET, POST, PUT, DELETE, etc.
@@ -64,6 +67,9 @@ function App() {
             }),
 
         }).then(data => data.json()).then(json => {
+            let end = Date.now();
+            console.log('It took', end - start + 'ms', 'to get a response.');
+
             // update state
             result.history.push({
                 action: userAction,
