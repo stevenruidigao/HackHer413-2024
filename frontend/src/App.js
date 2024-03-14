@@ -41,13 +41,13 @@ function App() {
     ];
 
     // send data/receive data
-    function send(conversation_id, userAction, name, scenario) {
+    function send(conversationID, action, name, scenario) {
         document.getElementById('submit-action').disabled = true;
         document.getElementsByClassName('text-input')[0].disabled = true;
         document.getElementById('loading').className = '';
 
-        console.log('SENDING THE USER INPUT:', userAction, scenario);
-        console.log('into the conversation:', conversation_id);
+        console.log('SENDING THE USER INPUT:', action, scenario);
+        console.log('into the conversation:', conversationID);
 
         let url = '/submit';
 
@@ -60,8 +60,8 @@ function App() {
                 // 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: JSON.stringify({
-                conversation_id: conversation_id,
-                action: userAction,
+                conversation_id: conversationID,
+                action: action,
                 name: name,
                 scenario: scenario
             }),
@@ -72,7 +72,7 @@ function App() {
 
             // update state
             result.history.push({
-                action: userAction,
+                action: action,
                 outcome: json.outcome
             });
 
